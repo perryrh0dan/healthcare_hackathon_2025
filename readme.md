@@ -23,3 +23,8 @@
 
 - python (lang + fastApi)
 - react
+
+
+## Backend
+
+- uv -> uv sync, uv run main.py 
