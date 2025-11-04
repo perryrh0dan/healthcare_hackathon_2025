@@ -1,8 +1,5 @@
-from dotenv import load_dotenv
 from src.api import app
 import uvicorn
-
-load_dotenv()
 
 
 def main():

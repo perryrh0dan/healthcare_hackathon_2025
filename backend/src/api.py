@@ -19,7 +19,7 @@ conversations: Dict[str, Dict[str, Any]] = {}
 
 llm = LLM()
 
-graph = Graph(llm)
+graph = Graph(llm.llm)
 
 
 @app.websocket("/ws/chat")
@@ -49,7 +49,7 @@ async def websocket_chat(websocket: WebSocket):
 
             history.append({"role": "user", "content": message})
 
-            response = await graph.chat(history=history)
+            response = graph.chat(history=history)
 
             response_text = response.get("response", response) if isinstance(response, dict) else response
 
