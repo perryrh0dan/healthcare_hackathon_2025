@@ -9,7 +9,7 @@ load_dotenv()
 
 class Embeddings:
     def __init__(self):
-        model = "grok"
+        model = os.getenv("MODEL", "grok")
         try:
             if model != "grok":
                 self.embeddings = BedrockEmbeddings(
