@@ -18,7 +18,8 @@ app.add_middleware(
 )
 
 conversations: Dict[str, Dict[str, Dict[str, Any]]] = {}
-daily_questions: Dict[str, list[dict]]
+daily_questions: Dict[str, list[Dict[str, str]]] = {}
+users: Dict[str, list[Dict[str, str]]] = {}
 
 
 try:
@@ -48,11 +49,40 @@ def get_daily_questions(user_id: str):
     ]
 
 
+@app.get("/registration")
+def get_registration_questions():
+    logger.info("Registration questions requested")
+    return [
+        {"question": "What is your name?", "type": "text"},
+        {"question": "What is your age?", "type": "text"},
+        {"question": "What is your height?", "type": "text"},
+        {
+            "question": "What is your gender?",
+            "type": "enum",
+            "options": [
+                {"label": "Male", "value": "male"},
+                {"label": "Female", "value": "female"},
+                {"label": "Other", "value": "other"},
+            ],
+        },
+        {"question": "Do you have typical health issues. If so what are those?", "type": "text"},
+        {"question": "What is your goal?", "type": "text"},
+    ]
+
+
 @app.post("/daily")
 def submit_daily_answers(answers: list[dict], user_id: str):
     daily_questions["user_id"] = answers
     logger.info(f"Received daily answers for user {user_id}: {answers}")
     return {"status": "success"}
+
+
+@app.post("/registration")
+def submit_registration_answers(answers: list[Dict[str, str]]):
+    user_id = str(uuid4())
+    users[user_id] = answers
+    logger.info(f"New user registered with ID {user_id}: {answers}")
+    return {"user_id": user_id}
 
 
 @app.websocket("/ws/chat")
