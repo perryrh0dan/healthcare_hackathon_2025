@@ -4,11 +4,15 @@ from fastapi import FastAPI, WebSocket
 from typing import Dict, Any
 from uuid import uuid4
 from datetime import datetime, timedelta
+
+from src.routes import documents, user
 from .llm import LLM
 from .graph import Graph
 from .questionsgraph import QuestionsGraph
 from langchain_core.messages import HumanMessage, AIMessage
+from .routes import documents
 from .config import logger
+from src import routes
 
 app = FastAPI()
 
@@ -20,17 +24,29 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(documents.router)
+app.include_router(user.router)
+
 conversations: Dict[str, Dict[str, Dict[str, Any]]] = {
     "test_user": {
         "conv1": {
             "messages": [
-                {"role": "user", "content": "I feel tired today", "timestamp": datetime.now()},
-                {"role": "assistant", "content": "That sounds concerning. Have you been sleeping well?", "timestamp": datetime.now()},
+                {
+                    "role": "user",
+                    "content": "I feel tired today",
+                    "timestamp": datetime.now(),
+                },
+                {
+                    "role": "assistant",
+                    "content": "That sounds concerning. Have you been sleeping well?",
+                    "timestamp": datetime.now(),
+                },
             ],
-            "state": {}
+            "state": {},
         }
     }
 }
+
 daily_questions: Dict[str, list[Dict[str, str]]] = {}
 users: Dict[str, list[Dict[str, str]]] = {
     "test_user": [
@@ -38,7 +54,10 @@ users: Dict[str, list[Dict[str, str]]] = {
         {"question": "What is your age?", "answer": "30"},
         {"question": "What is your height?", "answer": "180 cm"},
         {"question": "What is your gender?", "answer": "male"},
-        {"question": "Do you have typical health issues. If so what are those?", "answer": "None"},
+        {
+            "question": "Do you have typical health issues. If so what are those?",
+            "answer": "None",
+        },
         {"question": "What is your goal?", "answer": "Stay healthy"},
     ]
 }
@@ -51,7 +70,11 @@ def get_recent_messages(user_id: str):
     for conv in conversations[user_id].values():
         all_messages.extend(conv["messages"])
     now = datetime.now()
-    recent = [msg for msg in all_messages if msg.get("timestamp") and now - msg["timestamp"] < timedelta(hours=24)]
+    recent = [
+        msg
+        for msg in all_messages
+        if msg.get("timestamp") and now - msg["timestamp"] < timedelta(hours=24)
+    ]
     return recent
 
 
@@ -86,7 +109,9 @@ def get_daily_questions(user_id: str):
         return base_questions
     registration_answers = users[user_id]
     recent_messages = get_recent_messages(user_id)
-    additional_questions = questions_graph.chat(recent_messages, registration_answers, base_questions)
+    additional_questions = questions_graph.chat(
+        recent_messages, registration_answers, base_questions
+    )
     additional_questions = additional_questions[:2]
     return base_questions + additional_questions
 
@@ -107,7 +132,10 @@ def get_registration_questions():
                 {"label": "Other", "value": "other"},
             ],
         },
-        {"question": "Do you have typical health issues. If so what are those?", "type": "text"},
+        {
+            "question": "Do you have typical health issues. If so what are those?",
+            "type": "text",
+        },
         {"question": "What is your goal?", "type": "text"},
     ]
 
@@ -155,17 +183,26 @@ async def websocket_chat(websocket: WebSocket):
 
             if not conversation_id:
                 conversation_id = str(uuid4())
-                logger.info(f"New conversation started for user {user_id}: {conversation_id}")
+                logger.info(
+                    f"New conversation started for user {user_id}: {conversation_id}"
+                )
 
             user_conversations = conversations.setdefault(user_id, {})
-            conv_data = user_conversations.get(conversation_id, {"messages": [], "state": {}})
+            conv_data = user_conversations.get(
+                conversation_id, {"messages": [], "state": {}}
+            )
             history = conv_data["messages"]
 
-            history.append({"role": "user", "content": message, "timestamp": datetime.now()})
+            history.append(
+                {"role": "user", "content": message, "timestamp": datetime.now()}
+            )
 
             try:
                 messages = [
-                    HumanMessage(content=msg["content"]) if msg["role"] == "user" else AIMessage(content=msg["content"]) for msg in history
+                    HumanMessage(content=msg["content"])
+                    if msg["role"] == "user"
+                    else AIMessage(content=msg["content"])
+                    for msg in history
                 ]
                 response = graph.chat(messages)
             except Exception as e:
@@ -173,7 +210,11 @@ async def websocket_chat(websocket: WebSocket):
                 await websocket.send_json({"error": "Internal server error"})
                 continue
 
-            response_text = response.get("response", response) if isinstance(response, dict) else response
+            response_text = (
+                response.get("response", response)
+                if isinstance(response, dict)
+                else response
+            )
 
             if response_text:
                 assistant_msg = {
@@ -182,11 +223,15 @@ async def websocket_chat(websocket: WebSocket):
                     "timestamp": datetime.now(),
                 }
                 history.append(assistant_msg)
-                logger.debug(f"Assistant response sent for user {user_id}, conversation {conversation_id}")
+                logger.debug(
+                    f"Assistant response sent for user {user_id}, conversation {conversation_id}"
+                )
 
             user_conversations[conversation_id] = {"messages": history}
 
-            await websocket.send_json({"history": history, "conversation_id": conversation_id})
+            await websocket.send_json(
+                {"history": history, "conversation_id": conversation_id}
+            )
     except Exception as e:
         logger.error(f"WebSocket error: {str(e)}")
         await websocket.send_json({"error": str(e)})
