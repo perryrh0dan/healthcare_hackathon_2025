@@ -3,6 +3,7 @@ import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { RadioGroup, RadioGroupItem } from "../ui/radio-group"
+import { Slider } from "../ui/slider";
 
 type QuestionProps = {
   data: QuestionType, 
@@ -48,7 +49,7 @@ const body = (data: QuestionType) => {
          </RadioGroup>
       )
     case 'scale':
-      return <Input />
+      return <Slider min={data.from} max={data.to} />
   } 
 }
 

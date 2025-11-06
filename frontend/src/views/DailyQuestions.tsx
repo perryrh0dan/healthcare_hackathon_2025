@@ -7,6 +7,10 @@ interface IQuestion {
   question: string
 }
 
+interface NumberQuestion extends IQuestion {
+  type: 'number'
+}
+
 interface TextQuestion extends IQuestion {
   type: 'text'
 }
@@ -22,7 +26,7 @@ interface ScaleQuestion extends IQuestion {
   to: number,
 }
 
-export type QuestionType = TextQuestion | EnumQuestion | ScaleQuestion
+export type QuestionType = TextQuestion | NumberQuestion | EnumQuestion | ScaleQuestion
 
 
 const DailyQuestions = () => {
