@@ -5,6 +5,8 @@ import {
 } from '@tanstack/react-router';
 import App from '../App';
 import DailyQuestions from '../views/DailyQuestions';
+import LoginScreen from '../views/LoginScreen';
+import RegisterScreen from '../views/RegisterScreen';
 
 const rootRoute = createRootRoute({
   component: App,
@@ -27,7 +29,24 @@ const dailyQuestionsRoute = createRoute({
   component: DailyQuestions,
 });
 
-const routeTree = rootRoute.addChildren([indexRoute, dailyQuestionsRoute]);
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/login',
+  component: LoginScreen,
+});
+
+const registerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/register',
+  component: RegisterScreen,
+});
+
+const routeTree = rootRoute.addChildren([
+  indexRoute,
+  dailyQuestionsRoute,
+  loginRoute,
+  registerRoute,
+]);
 
 export const router = createRouter({ routeTree });
 
