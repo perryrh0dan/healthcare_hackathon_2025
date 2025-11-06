@@ -9,7 +9,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 
 interface Question {
   question: string;
@@ -38,6 +38,37 @@ const SetupScreen = () => {
     },
   });
 
+  const { mutate: submitProfile } = useMutation({
+    mutationKey: ['submit-profile'],
+    mutationFn: async (formData: FormData) => {
+      const response = await fetch('http://localhost:8008/submit-profile', {
+        method: 'POST',
+        body: formData,
+      });
+      if (!response.ok) {
+        throw new Error('Failed to submit profile');
+      }
+    },
+    onSuccess: () => {
+      alert('Profile submitted successfully!');
+    },
+    onError: () => {
+      alert('Error submitting profile.');
+    },
+  });
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData();
+    questions.forEach((_, idx) => {
+      formData.append(`answer_${idx}`, answers[idx] || '');
+    });
+    if (file) {
+      formData.append('electronic_patient_record', file);
+    }
+    submitProfile(formData);
+  };
+
   if (isLoading) return <div>Loading...</div>;
 
   if (error) return <div>Error loading questions</div>;
@@ -48,35 +79,7 @@ const SetupScreen = () => {
         <h1 className="mb-8 text-center text-2xl font-bold">
           Setup Your Profile
         </h1>
-        <form
-          className="w-full max-w-sm space-y-4"
-          onSubmit={async (e) => {
-            e.preventDefault();
-            const formData = new FormData();
-            questions.forEach((_, idx) => {
-              formData.append(`answer_${idx}`, answers[idx] || '');
-            });
-            if (file) {
-              formData.append('electronic_patient_record', file);
-            }
-            try {
-              const response = await fetch(
-                'http://localhost:8008/submit-profile',
-                {
-                  method: 'POST',
-                  body: formData,
-                }
-              );
-              if (response.ok) {
-                alert('Profile submitted successfully!');
-              } else {
-                alert('Failed to submit profile.');
-              }
-            } catch {
-              alert('Error submitting profile.');
-            }
-          }}
-        >
+        <form className="w-full max-w-sm space-y-4" onSubmit={handleSubmit}>
           {questions.map((question, idx) => (
             <div key={idx}>
               <Label htmlFor={`question-${idx}`}>{question.question} *</Label>
