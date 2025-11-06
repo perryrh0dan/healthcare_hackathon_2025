@@ -24,4 +24,12 @@
 - python (lang + fastApi)
 - react
 
+## Todo
 
+- upload data to s3 / casandra
+- first login screen
+- daily questions
+- dashboard welcome screen
+- chat screen
+- optional ai questions
+-  
