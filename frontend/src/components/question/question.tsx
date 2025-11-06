@@ -1,5 +1,6 @@
 import type { QuestionType } from "../../views/DailyQuestions";
 import { Button } from "../ui/button";
+import { Input } from "../ui/input";
 
 type QuestionProps = {
   data: QuestionType, 
@@ -16,7 +17,7 @@ const Question = ({ data, index, total, onNext, onPrev }: QuestionProps) => {
         <h1>Frage {index} von {total}</h1>
         <p>{data.question}</p>
         { data.type === 'text' && (
-          <input />
+          <Input />
         )}
         <div className="flex flex-row gap-2 w-full">
           <Button className="w-full" variant="outline" onClick={onPrev}>
