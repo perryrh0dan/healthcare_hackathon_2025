@@ -9,11 +9,11 @@ const LoginScreen = () => {
   const [error, setError] = useState<string>('');
   const navigate = useNavigate();
   
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate({ to: '/home' });
-    }
-  }, [isAuthenticated, navigate]);
+   useEffect(() => {
+     if (isAuthenticated && !isLoading) {
+       navigate({ to: '/home' });
+     }
+   }, [isAuthenticated, isLoading, navigate]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event?.preventDefault();

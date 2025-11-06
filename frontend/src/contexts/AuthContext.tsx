@@ -37,7 +37,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const fetchUserData = async (): Promise<User | null> => {
     try {
-      const response = await fetch('http://localhost:8008/users/me', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/me`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const login = async (username: string, password: string): Promise<void> => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:8008/users/login', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,8 +73,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error('Login failed');
       }
 
-      // Login only returns status 200, no token in response
-      // Make the /users/me request to get actual user data
       const userData = await fetchUserData();
       if (userData) {
         setUser(userData);
@@ -91,7 +89,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      await fetch('http://localhost:8008/users/logout', {
+      await fetch(`${import.meta.env.VITE_API_URL}/users/logout`, {
         method: 'POST',
         credentials: 'include',
       });
