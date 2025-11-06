@@ -5,9 +5,10 @@ import {
 } from '@tanstack/react-router';
 import App from '../App';
 import DailyQuestions from '../views/DailyQuestions';
-import LoginScreen from '../views/LoginScreen';
+import Home from '../views/Home';
 import RegisterScreen from '../views/RegisterScreen';
 import SetupScreen from '../views/SetupScreen';
+import LoginScreen from '@/views/LoginScreen';
 
 const rootRoute = createRootRoute({
   component: App,
@@ -16,12 +17,13 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: () => (
-    <div style={{ padding: '2rem' }}>
-      <h1>Willkommen bei der Healthcare App</h1>
-      <p>Wählen Sie eine Option aus der Navigation</p>
-    </div>
-  ),
+  component: Home,
+});
+
+const homeRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/home',
+  component: Home,
 });
 
 const dailyQuestionsRoute = createRoute({
@@ -50,6 +52,7 @@ const setupRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
+  homeRoute,
   dailyQuestionsRoute,
   loginRoute,
   registerRoute,

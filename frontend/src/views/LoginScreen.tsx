@@ -1,12 +1,19 @@
 import { Button } from '../components/ui/button';
-import { Link } from '@tanstack/react-router';
+import { Link, useNavigate } from '@tanstack/react-router';
 import { Input } from "../components/ui/input";
 import { useAuth } from '../contexts/AuthContext';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 const LoginScreen = () => {
-  const { login: authLogin, isLoading } = useAuth();
+  const { login: authLogin, isLoading, isAuthenticated } = useAuth();
   const [error, setError] = useState<string>('');
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate({ to: '/home' });
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
@@ -20,6 +27,7 @@ const LoginScreen = () => {
     try {
       setError('');
       await authLogin(data.username.toString(), data.password.toString());
+      navigate({ to: '/home' });
     } catch {
       setError('Login failed. Please check your credentials.');
     }

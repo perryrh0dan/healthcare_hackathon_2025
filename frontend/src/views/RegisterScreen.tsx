@@ -2,9 +2,18 @@ import { Input } from '@/components/ui/input';
 import { Button } from '../components/ui/button';
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import { useAuth } from '@/contexts';
+import { useEffect } from 'react';
 
 const RegisterScreen = () => {
+  const { isAuthenticated } = useAuth();
   const navigate = useNavigate()
+ 
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate({ to: '/home' });
+    }
+  }, [isAuthenticated, navigate]);
 
   const { mutate: register } = useMutation({
     mutationKey: ['register-user'],
@@ -23,7 +32,7 @@ const RegisterScreen = () => {
     }
   });
 
-  const handleSubmit = (event: any) => {
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     if (!event?.target) {
       return
