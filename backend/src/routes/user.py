@@ -1,5 +1,5 @@
 from typing import TypedDict
-from fastapi import APIRouter, HTTPException, Response, status
+from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.exceptions import FastAPIError
 from loguru import logger
 from http import HTTPStatus
@@ -21,9 +21,13 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me")
-async def me():
+async def me(request: Request):
     logger.debug("me")
-    get_user("test")
+    username = request.cookies.get("user")
+    if username is None:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
+
+    return get_user(username)
 
 
 @router.post("/register")
@@ -49,5 +53,11 @@ async def login(data: LoginDTO, response: Response):
         max_age=3600,  # seconds
         httponly=True,  # cannot access from JS
         secure=False,  # True if using HTTPS
-        samesite="lax",  # "strict", "lax", or "none"
+        samesite="none",  # Allow cross-origin
     )
+
+
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie("user")
+    return {"message": "Logged out"}

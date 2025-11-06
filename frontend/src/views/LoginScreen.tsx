@@ -1,34 +1,30 @@
 import { Button } from '../components/ui/button';
 import { Link } from '@tanstack/react-router';
 import { Input } from "../components/ui/input";
-import { useMutation } from '@tanstack/react-query';
+import { useAuth } from '../contexts/AuthContext';
+import { useState } from 'react';
 
 const LoginScreen = () => {
-  const { mutate: login } = useMutation({
-    mutationKey: ['login'],
-    mutationFn: async (data: { username: string, password: string}) => {
-      const response = await fetch(`http://localhost:8008/users/login`, { 
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch daily questions');
-      }
-    },
-  });
+  const { login: authLogin, isLoading } = useAuth();
+  const [error, setError] = useState<string>('');
 
-  const handleSubmit = (event: any) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     if (!event?.target) {
       return
     }
 
-    const formData = new FormData(event.target as HTMLFormElement); // e.target = the form
-    const data = Object.fromEntries(formData); // convert to plain object
+    const formData = new FormData(event.target as HTMLFormElement);
+    const data = Object.fromEntries(formData);
 
-    login({ username: data.username.toString(), password: data.password.toString()})
+    try {
+      setError('');
+      await authLogin(data.username.toString(), data.password.toString());
+    } catch {
+      setError('Login failed. Please check your credentials.');
+    }
   }
+
   return (
     <div className="flex min-h-screen items-center justify-center">
       <div className="flex flex-col items-center rounded-md bg-white p-4">
@@ -44,9 +40,12 @@ const LoginScreen = () => {
             type="password"
             placeholder="Password"
           />
-          <Button type="submit" className="w-full">
-            Login
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? 'Logging in...' : 'Login'}
           </Button>
+          {error && (
+            <p className="text-red-500 text-sm mt-2">{error}</p>
+          )}
         </form>
         <div className="mt-4 text-center w-full">
           <Link to="/register">

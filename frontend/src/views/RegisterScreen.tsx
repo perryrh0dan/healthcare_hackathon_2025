@@ -1,8 +1,11 @@
 import { Input } from '@/components/ui/input';
 import { Button } from '../components/ui/button';
 import { useMutation } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 
 const RegisterScreen = () => {
+  const navigate = useNavigate()
+
   const { mutate: register } = useMutation({
     mutationKey: ['register-user'],
     mutationFn: async (user: { username: string, password: string}) => {
@@ -15,6 +18,9 @@ const RegisterScreen = () => {
         throw new Error('Failed to fetch daily questions');
       }
     },
+    onSuccess: () => {
+      navigate({ to: '/login' })
+    }
   });
 
   const handleSubmit = (event: any) => {
