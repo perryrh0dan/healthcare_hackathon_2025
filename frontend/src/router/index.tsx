@@ -7,6 +7,7 @@ import App from '../App';
 import DailyQuestions from '../views/DailyQuestions';
 import LoginScreen from '../views/LoginScreen';
 import RegisterScreen from '../views/RegisterScreen';
+import SetupScreen from '../views/SetupScreen';
 
 const rootRoute = createRootRoute({
   component: App,
@@ -41,11 +42,18 @@ const registerRoute = createRoute({
   component: RegisterScreen,
 });
 
+const setupRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/setup',
+  component: SetupScreen,
+});
+
 const routeTree = rootRoute.addChildren([
   indexRoute,
   dailyQuestionsRoute,
   loginRoute,
   registerRoute,
+  setupRoute,
 ]);
 
 export const router = createRouter({ routeTree });
