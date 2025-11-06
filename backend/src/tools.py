@@ -1,6 +1,6 @@
 from langchain.tools import tool
 from langchain_core.vectorstores import InMemoryVectorStore
-from .embeddings import Embeddings
+from .clients.embeddings import Embeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 import os

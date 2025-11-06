@@ -1,7 +1,7 @@
 import os
 import boto3
 from dotenv import load_dotenv
-from .config import logger
+from ..config import logger
 
 load_dotenv()
 

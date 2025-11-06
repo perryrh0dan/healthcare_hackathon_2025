@@ -1,8 +1,7 @@
 from fastapi import APIRouter, File, UploadFile
 from loguru import logger
 
-from src.llm import LLM
-
+from ..clients.llm import LLM
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -17,7 +16,8 @@ async def get_daily_questions(file: UploadFile = File(...)):
     messages = [
         {
             "role": "user",
-            "content": f"""[Role]
+            "content": (
+                f"""[Role]
 Your are an professional doctor assistent and your job is to analyse the german electronic patient record.
 
 [Task]
@@ -25,7 +25,8 @@ Take the Data and create a detailed report of the patient health status that can
 
 [Data]
 {contents}
-            """,
+            """
+            ),
         },
     ]
 

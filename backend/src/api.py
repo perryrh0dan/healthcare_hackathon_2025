@@ -5,14 +5,14 @@ from typing import Dict, Any
 from uuid import uuid4
 from datetime import datetime, timedelta
 
-from src.routes import documents, user
-from .llm import LLM
+from .routes import documents, user
+from .clients.llm import LLM
 from .graph import Graph
 from .questionsgraph import QuestionsGraph
 from langchain_core.messages import HumanMessage, AIMessage
 from .routes import documents
 from .config import logger
-from src import routes
+from . import routes
 
 app = FastAPI()
 
