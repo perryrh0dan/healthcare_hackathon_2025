@@ -8,7 +8,7 @@ import uuid
 from src.db import Event, get_user
 
 
-class CalenderDTO(TypedDict):
+class CalendarDTO(TypedDict):
     username: str
     events: list[Event]
 
@@ -33,7 +33,7 @@ class EditEventDTO(TypedDict):
     to_timestamp: str
 
 
-router = APIRouter(prefix="/calender", tags=["calender"])
+router = APIRouter(prefix="/calendar", tags=["calendar"])
 
 
 @router.get("/")
@@ -44,7 +44,7 @@ async def get_calendar(username: str):
         logger.warning(f"User not found: {username}")
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found")
     logger.info(f"Retrieved {len(user.events)} events for user: {username}")
-    return CalenderDTO(username=username, events=user.events)
+    return CalendarDTO(username=username, events=user.events)
 
 
 @router.post("/add")

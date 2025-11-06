@@ -4,7 +4,7 @@ from typing import Dict, Any
 from uuid import uuid4
 from datetime import datetime, timedelta
 
-from .routes import documents, user, calender
+from .routes import documents, user, calendar
 from .clients.llm import LLM
 from .graph import Graph
 from .questionsgraph import QuestionsGraph
@@ -23,7 +23,7 @@ app.add_middleware(
 
 app.include_router(documents.router)
 app.include_router(user.router)
-app.include_router(calender.router)
+app.include_router(calendar.router)
 
 conversations: Dict[str, Dict[str, Dict[str, Any]]] = {
     "test_user": {
