@@ -1,14 +1,20 @@
 from typing import TypedDict
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException, Response, status
+from fastapi.exceptions import FastAPIError
 from loguru import logger
+from http import HTTPStatus
 
 from src.db import User, create_user, get_user
 
 
-class UserDTO(TypedDict):
-    first_name: str
-    last_name: str
-    age: int
+class RegisterUserDTO(TypedDict):
+    username: str
+    password: str
+
+
+class LoginDTO(TypedDict):
+    username: str
+    password: str
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -20,12 +26,28 @@ async def me():
     get_user("test")
 
 
-async def register(user: UserDTO):
+@router.post("/register")
+async def register(data: RegisterUserDTO):
     create_user(
         User(
-            first_name=user["first_name"],
-            last_name=user["last_name"],
-            age=user["age"],
+            username=data["username"],
+            password=data["password"],
             status="setup",
         )
+    )
+
+
+@router.post("/login")
+async def login(data: LoginDTO, response: Response):
+    user = get_user(data["username"])
+    if user is None:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST)
+
+    response.set_cookie(
+        key="user",
+        value=data["username"],
+        max_age=3600,  # seconds
+        httponly=True,  # cannot access from JS
+        secure=False,  # True if using HTTPS
+        samesite="lax",  # "strict", "lax", or "none"
     )

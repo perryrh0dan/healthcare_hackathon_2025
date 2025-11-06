@@ -9,7 +9,6 @@ from .clients.llm import LLM
 from .graph import Graph
 from .questionsgraph import QuestionsGraph
 from langchain_core.messages import HumanMessage, AIMessage
-from .routes import documents
 from .config import logger
 
 app = FastAPI()
