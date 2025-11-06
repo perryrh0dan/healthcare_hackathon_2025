@@ -16,9 +16,7 @@ const Question = ({ data, index, total, onNext, onPrev }: QuestionProps) => {
       <div className="rounded-l p-4 flex flex-col gap-2">
         <h1>Frage {index} von {total}</h1>
         <p>{data.question}</p>
-        { data.type === 'text' && (
-          <Input />
-        )}
+        {body(data.type)}
         <div className="flex flex-row gap-2 w-full">
           <Button className="w-full" variant="outline" onClick={onPrev}>
             Prev
@@ -30,6 +28,17 @@ const Question = ({ data, index, total, onNext, onPrev }: QuestionProps) => {
       </div>
     </div>
   );
+}
+
+const body = (type: QuestionProps['data']['type']) => {
+  switch (type) {
+    case 'text':
+      return <Input />
+    case 'enum':
+      return <Input />
+    case 'scale':
+      return <Input />
+  } 
 }
 
 export default Question

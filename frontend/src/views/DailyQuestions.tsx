@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useQuery } from '@tanstack/react-query';
 import IQuestion from "../components/question/question";
 import Question from "../components/question/question";
 
@@ -27,21 +28,32 @@ export type QuestionType = TextQuestion | EnumQuestion | ScaleQuestion
 const DailyQuestions = () => {
   const [index, setIndex] = useState<number>(0)
 
-  const questions: Array<QuestionType> = [{
-    question: "Wie geht es dir heute",
-    type: 'text',
-  } as const]
+  const { data: questions = [], isLoading, error } = useQuery({
+    queryKey: ['daily-questions'],
+    queryFn: async () => {
+      const response = await fetch(`http://localhost:8008/daily?user_id=test`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch daily questions');
+      }
+      return response.json() as Promise<QuestionType[]>;
+    },
+  });
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error loading questions</div>;
 
   const question = questions[index]
 
+  if (!question) return <div>No questions available</div>;
+
   return (
     <div>
-      <Question 
-        data={question} 
-        index={0} 
+      <Question
+        data={question}
+        index={index}
         total={questions.length}
-        onPrev={() => setIndex(i => i - 1)} 
-        onNext={() => setIndex(i => i + 1)}/>
+        onPrev={() => setIndex(i => Math.max(0, i - 1))}
+        onNext={() => setIndex(i => Math.min(questions.length - 1, i + 1))}/>
     </div>
   );
 };
