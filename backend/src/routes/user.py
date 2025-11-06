@@ -23,6 +23,9 @@ async def me():
 async def register(user: UserDTO):
     create_user(
         User(
-            first_name=user["first_name"], last_name=user["last_name"], age=user["age"]
+            first_name=user["first_name"],
+            last_name=user["last_name"],
+            age=user["age"],
+            status="setup",
         )
     )
