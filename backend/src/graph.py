@@ -29,7 +29,10 @@ class Graph:
             result = self.graph.invoke({"messages": history})
             ai_response = result["messages"][-1]
             logger.debug("Graph invocation successful")
-            return ai_response.content
+            if isinstance(ai_response, dict):
+                return ai_response.get("content", str(ai_response))
+            else:
+                return ai_response.content
         except Exception as e:
             logger.error(f"Error during graph chat: {e}")
             return "An error occurred while processing your request."
