@@ -1,12 +1,14 @@
-from typing import TypedDict, List
+from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END, START
-from langchain_core.messages import BaseMessage, ToolMessage
+from langchain_core.messages import BaseMessage, ToolMessage, SystemMessage
 from .tools import retrieve_context
 from .config import logger
 
 
 class AgentState(TypedDict):
     messages: List[BaseMessage]
+    daily_answers: List[Dict[str, Any]]
+    registration_answers: List[Dict[str, str]]
 
 
 class Graph:
@@ -23,10 +25,14 @@ class Graph:
             logger.error(f"Failed to initialize graph: {e}")
             raise
 
-    def chat(self, history):
+    def chat(self, history, daily_answers=None, registration_answers=None):
         try:
+            if daily_answers is None:
+                daily_answers = []
+            if registration_answers is None:
+                registration_answers = []
             logger.debug(f"Invoking graph with {len(history)} messages")
-            result = self.graph.invoke({"messages": history})
+            result = self.graph.invoke({"messages": history, "daily_answers": daily_answers, "registration_answers": registration_answers})
             ai_response = result["messages"][-1]
             logger.debug("Graph invocation successful")
             if isinstance(ai_response, dict):
@@ -38,8 +44,13 @@ class Graph:
             return "An error occurred while processing your request."
 
     def supervisor_agent(self, state: AgentState):
-        response = self.llm.invoke(state["messages"])
-        messages = state["messages"] + [response]
+        # Prepend context as system message
+        context_msg = f"User's daily answers: {state['daily_answers']}. Registration info: {state['registration_answers']}."
+        system_message = SystemMessage(content=context_msg)
+        messages_with_context = [system_message] + state["messages"]
+
+        response = self.llm.invoke(messages_with_context)
+        messages = messages_with_context + [response]
         while hasattr(response, "tool_calls") and response.tool_calls:
             for tool_call in response.tool_calls:
                 args = tool_call["args"]
