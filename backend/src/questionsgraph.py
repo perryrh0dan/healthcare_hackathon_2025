@@ -4,7 +4,6 @@ from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, END, START
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
 from .config import logger
-from langchain_core.prompts import ChatPromptTemplate
 from typing import Dict
 
 

@@ -44,7 +44,6 @@ class Graph:
             return "An error occurred while processing your request."
 
     def supervisor_agent(self, state: AgentState):
-        # Prepend context as system message
         context_msg = f"User's daily answers: {state['daily_answers']}. Registration info: {state['registration_answers']}."
         system_message = SystemMessage(content=context_msg)
         messages_with_context = [system_message] + state["messages"]
