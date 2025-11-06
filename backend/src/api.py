@@ -17,7 +17,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-conversations: Dict[str, Dict[str, Any]] = {}
+conversations: Dict[str, Dict[str, Dict[str, Any]]] = {}
+daily_questions: Dict[str, list[dict]]
+
 
 try:
     llm = LLM()
@@ -26,6 +28,31 @@ try:
 except Exception as e:
     logger.error(f"Failed to initialize API components: {e}")
     raise
+
+
+@app.get("/daily")
+def get_daily_questions(user_id: str):
+    logger.info(f"Daily questions requested for user: {user_id}")
+    return [
+        {"question": "How are you?", "type": "scale", "from": 1, "to": 5},
+        {"question": "What is your blood pressure?", "type": "text"},
+        {"question": "What is your weight?", "type": "text"},
+        {
+            "question": "Did you take any medication today?",
+            "type": "enum",
+            "options": [
+                {"label": "Yes", "value": "yes"},
+                {"label": "No", "value": "no"},
+            ],
+        },
+    ]
+
+
+@app.post("/daily")
+def submit_daily_answers(answers: list[dict], user_id: str):
+    daily_questions["user_id"] = answers
+    logger.info(f"Received daily answers for user {user_id}: {answers}")
+    return {"status": "success"}
 
 
 @app.websocket("/ws/chat")
@@ -40,6 +67,12 @@ async def websocket_chat(websocket: WebSocket):
             if msg_type == "ping":
                 continue
 
+            user_id = data.get("user_id")
+            if not user_id:
+                logger.warning("No user_id provided in WebSocket message")
+                await websocket.send_json({"error": "user_id required"})
+                continue
+
             message = data.get("message")
             conversation_id = data.get("conversation_id", "")
 
@@ -50,15 +83,18 @@ async def websocket_chat(websocket: WebSocket):
 
             if not conversation_id:
                 conversation_id = str(uuid4())
-                logger.info(f"New conversation started: {conversation_id}")
+                logger.info(f"New conversation started for user {user_id}: {conversation_id}")
 
-            conv_data = conversations.get(conversation_id, {"messages": [], "state": {}})
+            user_conversations = conversations.setdefault(user_id, {})
+            conv_data = user_conversations.get(conversation_id, {"messages": [], "state": {}})
             history = conv_data["messages"]
 
             history.append({"role": "user", "content": message})
 
             try:
-                messages = [HumanMessage(content=msg["content"]) if msg["role"] == "user" else AIMessage(content=msg["content"]) for msg in history]
+                messages = [
+                    HumanMessage(content=msg["content"]) if msg["role"] == "user" else AIMessage(content=msg["content"]) for msg in history
+                ]
                 response = graph.chat(history=messages)
             except Exception as e:
                 logger.error(f"Error processing message: {e}")
@@ -73,9 +109,9 @@ async def websocket_chat(websocket: WebSocket):
                     "content": response_text,
                 }
                 history.append(assistant_msg)
-                logger.debug(f"Assistant response sent for conversation {conversation_id}")
+                logger.debug(f"Assistant response sent for user {user_id}, conversation {conversation_id}")
 
-            conversations[conversation_id] = {"messages": history}
+            user_conversations[conversation_id] = {"messages": history}
 
             await websocket.send_json({"history": history, "conversation_id": conversation_id})
     except Exception as e:
