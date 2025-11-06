@@ -96,6 +96,22 @@ const SetupScreen = () => {
                     touched[idx] && !answers[idx] ? 'border-red-500' : ''
                   }
                 />
+              ) : question.type === 'number' ? (
+                <Input
+                  id={`question-${idx}`}
+                  type="number"
+                  value={answers[idx] || ''}
+                  onChange={(e) =>
+                    setAnswers((prev) => ({ ...prev, [idx]: e.target.value }))
+                  }
+                  onBlur={() =>
+                    setTouched((prev) => ({ ...prev, [idx]: true }))
+                  }
+                  required
+                  className={
+                    touched[idx] && !answers[idx] ? 'border-red-500' : ''
+                  }
+                />
               ) : question.type === 'enum' ? (
                 <Select
                   value={answers[idx] || ''}
