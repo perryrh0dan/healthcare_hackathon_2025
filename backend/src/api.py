@@ -1,4 +1,3 @@
-import json
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, WebSocket
 from typing import Dict, Any
@@ -12,7 +11,6 @@ from .questionsgraph import QuestionsGraph
 from langchain_core.messages import HumanMessage, AIMessage
 from .routes import documents
 from .config import logger
-from . import routes
 
 app = FastAPI()
 
