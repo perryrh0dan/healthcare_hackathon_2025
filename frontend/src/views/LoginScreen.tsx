@@ -1,11 +1,6 @@
 import { Button } from '../components/ui/button';
-<<<<<<< HEAD
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Input } from "../components/ui/input";
-=======
-import { Link } from '@tanstack/react-router';
-import { Input } from '../components/ui/input';
->>>>>>> c4b3530 (fix/ new design)
 import { useAuth } from '../contexts/AuthContext';
 import { useEffect, useState } from 'react';
 
