@@ -74,8 +74,8 @@ const SetupScreen = () => {
   if (error) return <div>Error loading questions</div>;
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="flex flex-col items-center rounded-md bg-white p-4">
+    <div className="w-full max-w-md">
+      <div className="bg-card border-border flex flex-col items-center rounded-lg border p-6 shadow-lg">
         <h1 className="mb-8 text-center text-2xl font-bold">
           Setup Your Profile
         </h1>
@@ -152,10 +152,10 @@ const SetupScreen = () => {
             onBlur={() => setFileTouched(true)}
             onChange={(e) => setFile(e.target.files?.[0] || null)}
           />
-          <p className="text-sm text-gray-600">
+          <p className="text-muted-foreground text-sm">
             All fields marked with * are required.
           </p>
-          <Button type="submit" className="h-12 w-full">
+          <Button type="submit" className="w-full">
             Save Profile
           </Button>
         </form>

@@ -1,6 +1,11 @@
 import { Button } from '../components/ui/button';
+<<<<<<< HEAD
 import { Link, useNavigate } from '@tanstack/react-router';
 import { Input } from "../components/ui/input";
+=======
+import { Link } from '@tanstack/react-router';
+import { Input } from '../components/ui/input';
+>>>>>>> c4b3530 (fix/ new design)
 import { useAuth } from '../contexts/AuthContext';
 import { useEffect, useState } from 'react';
 
@@ -18,7 +23,7 @@ const LoginScreen = () => {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event?.preventDefault();
     if (!event?.target) {
-      return
+      return;
     }
 
     const formData = new FormData(event.target as HTMLFormElement);
@@ -31,37 +36,25 @@ const LoginScreen = () => {
     } catch {
       setError('Login failed. Please check your credentials.');
     }
-  }
+  };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
-      <div className="flex flex-col items-center rounded-md bg-white p-4">
+    <div className="w-full max-w-md">
+      <div className="bg-card border-border flex flex-col items-center rounded-lg border p-6 shadow-lg">
         <h1 className="mb-8 text-center text-2xl font-bold">Login</h1>
         <form className="w-full max-w-sm space-y-4" onSubmit={handleSubmit}>
-          <Input
-            name='username'
-            type="text"
-            placeholder="Name"
-          />
-          <Input
-            name='password'
-            type="password"
-            placeholder="Password"
-          />
+          <Input name="username" type="text" placeholder="Name" />
+          <Input name="password" type="password" placeholder="Password" />
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Logging in...' : 'Login'}
           </Button>
-          {error && (
-            <p className="text-red-500 text-sm mt-2">{error}</p>
-          )}
-        </form>
-        <div className="mt-4 text-center w-full">
+          {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
           <Link to="/register">
             <Button variant="outline" className="w-full">
               Register
             </Button>
           </Link>
-        </div>
+        </form>
       </div>
     </div>
   );

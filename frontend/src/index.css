@@ -1,7 +1,7 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-@source "./index.html";
-@source "./src/**/*.{js,ts,jsx,tsx}";
+@source './index.html';
+@source './src/**/*.{js,ts,jsx,tsx}';
 
 @theme {
   --color-border: hsl(var(--border));
@@ -30,30 +30,30 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 160 25% 98%;
+    --foreground: 160 10% 15%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 160 10% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --popover-foreground: 160 10% 15%;
+    --primary: 170 55% 50%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 160 30% 95%;
+    --secondary-foreground: 160 10% 20%;
+    --muted: 160 20% 92%;
+    --muted-foreground: 160 5% 50%;
+    --accent: 180 40% 80%;
+    --accent-foreground: 180 20% 25%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 160 20% 85%;
+    --input: 160 20% 95%;
+    --ring: 170 55% 50%;
     --radius: 0.5rem;
     font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
     line-height: 1.5;
     font-weight: 400;
-    background-color: #f9fafb;
+    background-color: hsl(160 25% 98%);
     font-synthesis: none;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
@@ -61,25 +61,25 @@
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 160 20% 8%;
+    --foreground: 160 15% 95%;
+    --card: 160 15% 12%;
+    --card-foreground: 160 15% 95%;
+    --popover: 160 15% 12%;
+    --popover-foreground: 160 15% 95%;
+    --primary: 170 50% 60%;
+    --primary-foreground: 160 20% 8%;
+    --secondary: 160 15% 18%;
+    --secondary-foreground: 160 15% 95%;
+    --muted: 160 15% 18%;
+    --muted-foreground: 160 10% 65%;
+    --accent: 180 30% 25%;
+    --accent-foreground: 180 15% 90%;
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 160 15% 20%;
+    --input: 160 15% 18%;
+    --ring: 170 50% 60%;
   }
 }
 
