@@ -78,10 +78,10 @@ class QuestionsGraph:
         health_summary = state["summarization"]
         question_prompt = f"""Based on user registration answers: {registration_answers}
 Base questions already asked: {base_questions}
+Health summary: {health_summary}
 Generate up to 2 additional daily health questions if needed, different from the base ones."""
-        question_state = {"messages": [HumanMessage(content=question_prompt)], "summarization": health_summary}
         structured_llm = self.llm.with_structured_output(QuestionList)
-        response = structured_llm.invoke(question_state["messages"])
+        response = structured_llm.invoke([HumanMessage(content=question_prompt)])
 
         state["messages"].append(AIMessage(content=json.dumps([q.dict(by_alias=True) for q in response.questions])))
         return state
