@@ -1,5 +1,5 @@
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, BackgroundTasks, Request
 from pydantic import BaseModel
 from typing import Optional
 from uuid import uuid4
@@ -36,25 +36,24 @@ app.include_router(dashboard.router)
 
 
 class ChatRequest(BaseModel):
-    user_id: str
     message: str
     conversation_id: Optional[str] = None
 
 
 @app.post("/chat")
-async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks):
-    user_id = request.user_id
-    if not user_id:
-        logger.warning("No user_id provided in request")
-        return {"error": "user_id required"}
+async def chat_endpoint(request: Request, data: ChatRequest, background_tasks: BackgroundTasks):
+    user_id = request.cookies.get("user")
+    if user_id is None:
+        logger.warning(f"User {user_id} not found")
+        return {"error": "User not found"}
 
     user = get_user(user_id)
     if user is None:
         logger.warning(f"User {user_id} not found")
         return {"error": "User not found"}
 
-    message = request.message
-    conversation_id = request.conversation_id or ""
+    message = data.message
+    conversation_id = data.conversation_id or ""
 
     if not message:
         logger.warning("Received empty message")
@@ -97,9 +96,7 @@ async def chat_endpoint(request: ChatRequest, background_tasks: BackgroundTasks)
     update_conversation(user_id, conversation_id, history, conv.state)
 
     # Trigger async summarization
-    messages_for_summary = [
-        HumanMessage(content=msg.content) if msg.role == "user" else AIMessage(content=msg.content) for msg in history
-    ]
+    messages_for_summary = [HumanMessage(content=msg.content) if msg.role == "user" else AIMessage(content=msg.content) for msg in history]
     background_tasks.add_task(summarization_graph.chat, messages_for_summary, user)
 
     # Convert messages to JSON-serializable format
