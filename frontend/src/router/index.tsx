@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-router';
 import App from '../App';
 import DailyQuestions from '../views/DailyQuestions';
+import FoodPlanner from '../views/FoodPlanner';
 import Home from '../views/Home';
 import RegisterScreen from '../views/RegisterScreen';
 import SetupScreen from '../views/SetupScreen';
@@ -18,19 +19,31 @@ const rootRoute = createRootRoute({
 const indexRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/',
-  component: () => <ProtectedRoute><Home /></ProtectedRoute>,
+  component: () => (
+    <ProtectedRoute>
+      <Home />
+    </ProtectedRoute>
+  ),
 });
 
 const homeRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/home',
-  component: () => <ProtectedRoute><Home /></ProtectedRoute>,
+  component: () => (
+    <ProtectedRoute>
+      <Home />
+    </ProtectedRoute>
+  ),
 });
 
 const dailyQuestionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/daily',
-  component: () => <ProtectedRoute><DailyQuestions /></ProtectedRoute>,
+  component: () => (
+    <ProtectedRoute>
+      <DailyQuestions />
+    </ProtectedRoute>
+  ),
 });
 
 const loginRoute = createRoute({
@@ -48,7 +61,21 @@ const registerRoute = createRoute({
 const setupRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/setup',
-  component: () => <ProtectedRoute route='setup'><SetupScreen /></ProtectedRoute>,
+  component: () => (
+    <ProtectedRoute route="setup">
+      <SetupScreen />
+    </ProtectedRoute>
+  ),
+});
+
+const foodPlannerRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/food-planner',
+  component: () => (
+    <ProtectedRoute>
+      <FoodPlanner />
+    </ProtectedRoute>
+  ),
 });
 
 const routeTree = rootRoute.addChildren([
@@ -58,6 +85,7 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   registerRoute,
   setupRoute,
+  foodPlannerRoute,
 ]);
 
 export const router = createRouter({ routeTree });
