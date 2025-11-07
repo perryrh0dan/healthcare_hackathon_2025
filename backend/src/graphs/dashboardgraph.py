@@ -42,7 +42,9 @@ class DashboardGraph(ABC):
 
     def run(self, user_data: Dict) -> List[Widget]:
         try:
-            logger.debug(f"Invoking DashboardGraph with user data for {user_data.get('username', 'unknown')}")
+            logger.debug(
+                f"Invoking DashboardGraph with user data for {user_data.get('username', 'unknown')}"
+            )
             result = self.graph.invoke(
                 {
                     "user_data": user_data,

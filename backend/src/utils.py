@@ -5,7 +5,7 @@ from langchain_community.document_loaders import PyPDFLoader
 import os
 from .config import logger
 from datetime import datetime, timedelta
-from .db import get_user_conversations, get_user, User
+from .db import Answer, DailyAnswers, get_user_conversations, get_user, User
 from typing import List, Dict, Optional
 from .db import Event
 from fastapi import HTTPException, Request
@@ -63,18 +63,18 @@ def get_recent_messages(username: str):
     return recent
 
 
-def calculate_streak(daily_answers: List[Dict]) -> int:
+def calculate_streak(daily_answers: List[DailyAnswers]) -> int:
     """Calculate consecutive days streak of daily answers from today backwards."""
     if not daily_answers:
         return 0
 
     # Sort by date descending (most recent first)
-    sorted_answers = sorted(daily_answers, key=lambda x: x["date"], reverse=True)
+    sorted_answers = sorted(daily_answers, key=lambda x: x.date, reverse=True)
     streak = 0
     current_date = datetime.now().date()
 
     for entry in sorted_answers:
-        entry_date = datetime.fromisoformat(entry["date"]).date()
+        entry_date = datetime.fromisoformat(entry.date).date()
         if entry_date == current_date:
             streak += 1
             current_date -= timedelta(days=1)
