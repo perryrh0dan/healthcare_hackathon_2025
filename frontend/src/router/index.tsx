@@ -48,7 +48,7 @@ const registerRoute = createRoute({
 const setupRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/setup',
-  component: () => <ProtectedRoute><SetupScreen /></ProtectedRoute>,
+  component: () => <ProtectedRoute route='setup'><SetupScreen /></ProtectedRoute>,
 });
 
 const routeTree = rootRoute.addChildren([

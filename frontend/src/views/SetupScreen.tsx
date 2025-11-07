@@ -15,11 +15,12 @@ interface Question {
   question: string;
   type: string;
   options?: { label: string; value: string }[];
+  field: string
 }
 
 const SetupScreen = () => {
-  const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [touched, setTouched] = useState<Record<number, boolean>>({});
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [fileTouched, setFileTouched] = useState(false);
   const [file, setFile] = useState<File | null>(null);
 
@@ -39,11 +40,12 @@ const SetupScreen = () => {
   });
 
   const { mutate: submitProfile } = useMutation({
-    mutationKey: ['submit-profile'],
+    mutationKey: ['setup'],
     mutationFn: async (formData: FormData) => {
-      const response = await fetch('http://localhost:8008/submit-profile', {
+      const response = await fetch('http://localhost:8008/users/setup', {
         method: 'POST',
         body: formData,
+        credentials: 'include'
       });
       if (!response.ok) {
         throw new Error('Failed to submit profile');
@@ -60,8 +62,8 @@ const SetupScreen = () => {
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData();
-    questions.forEach((_, idx) => {
-      formData.append(`answer_${idx}`, answers[idx] || '');
+    Object.entries(answers).map(([key, value]) => {
+      formData.append(key, value || '');
     });
     if (file) {
       formData.append('electronic_patient_record', file);
@@ -80,54 +82,54 @@ const SetupScreen = () => {
           Setup Your Profile
         </h1>
         <form className="w-full max-w-sm space-y-4" onSubmit={handleSubmit}>
-          {questions.map((question, idx) => (
-            <div key={idx}>
-              <Label htmlFor={`question-${idx}`}>{question.question} *</Label>
+          {questions.map((question) => (
+            <div key={question.field}>
+              <Label htmlFor={`question-${question.field}`}>{question.question} *</Label>
               {question.type === 'text' ? (
                 <Input
-                  id={`question-${idx}`}
+                  id={`question-${question.field}`}
                   type="text"
-                  value={answers[idx] || ''}
+                  value={answers[question.field] || ''}
                   onChange={(e) =>
-                    setAnswers((prev) => ({ ...prev, [idx]: e.target.value }))
+                    setAnswers((prev) => ({ ...prev, [question.field]: e.target.value }))
                   }
                   onBlur={() =>
-                    setTouched((prev) => ({ ...prev, [idx]: true }))
+                    setTouched((prev) => ({ ...prev, [question.field]: true }))
                   }
                   required
                   className={
-                    touched[idx] && !answers[idx] ? 'border-red-500' : ''
+                    touched[question.field] && !answers[question.field] ? 'border-red-500' : ''
                   }
                 />
               ) : question.type === 'number' ? (
                 <Input
-                  id={`question-${idx}`}
+                  id={`question-${question.field}`}
                   type="number"
-                  value={answers[idx] || ''}
+                  value={answers[question.field] || ''}
                   onChange={(e) =>
-                    setAnswers((prev) => ({ ...prev, [idx]: e.target.value }))
+                    setAnswers((prev) => ({ ...prev, [question.field]: e.target.value }))
                   }
                   onBlur={() =>
-                    setTouched((prev) => ({ ...prev, [idx]: true }))
+                    setTouched((prev) => ({ ...prev, [question.field]: true }))
                   }
                   required
                   className={
-                    touched[idx] && !answers[idx] ? 'border-red-500' : ''
+                    touched[question.field] && !answers[question.field] ? 'border-red-500' : ''
                   }
                 />
               ) : question.type === 'enum' ? (
                 <Select
-                  value={answers[idx] || ''}
+                  value={answers[question.field] || ''}
                   onValueChange={(value) =>
-                    setAnswers((prev) => ({ ...prev, [idx]: value }))
+                    setAnswers((prev) => ({ ...prev, [question.field]: value }))
                   }
                   required
                 >
                   <SelectTrigger
-                    id={`question-${idx}`}
-                    className={`h-12 w-full ${touched[idx] && !answers[idx] ? 'border-red-500' : ''}`}
+                    id={`question-${question.field}`}
+                    className={`h-12 w-full ${touched[question.field] && !answers[question.field] ? 'border-red-500' : ''}`}
                     onBlur={() =>
-                      setTouched((prev) => ({ ...prev, [idx]: true }))
+                      setTouched((prev) => ({ ...prev, [question.field]: true }))
                     }
                   >
                     <SelectValue placeholder="Select an option" />
@@ -147,7 +149,6 @@ const SetupScreen = () => {
           <Input
             type="file"
             id="epr"
-            required
             className={fileTouched && !file ? 'border-red-500' : ''}
             onBlur={() => setFileTouched(true)}
             onChange={(e) => setFile(e.target.files?.[0] || null)}

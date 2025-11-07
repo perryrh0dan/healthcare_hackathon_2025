@@ -118,9 +118,10 @@ def get_daily_questions(user_id: str):
 def get_registration_questions():
     logger.info("Registration questions requested")
     return [
-        {"question": "What is your name?", "type": "text"},
-        {"question": "What is your age?", "type": "number"},
-        {"question": "What is your height?", "type": "text"},
+        {"question": "What is your first name?", "type": "text", "field": "first_name"},
+        {"question": "What is your last name?", "type": "text", "field": "last_name"},
+        {"question": "What is your age?", "type": "number", "field": "age"},
+        {"question": "What is your height?", "type": "text", "field": "height"},
         {
             "question": "What is your gender?",
             "type": "enum",
@@ -129,16 +130,19 @@ def get_registration_questions():
                 {"label": "Female", "value": "female"},
                 {"label": "Other", "value": "other"},
             ],
+            "field": "gender",
         },
         {
             "question": "Do you have any allergies. If so what are those?",
             "type": "text",
+            "field": "allergies",
         },
         {
             "question": "Do you have typical health issues. If so what are those?",
             "type": "text",
+            "field": "issues",
         },
-        {"question": "What is your goal?", "type": "text"},
+        {"question": "What is your goal?", "type": "text", "field": "goal"},
     ]
 
 

@@ -1,10 +1,10 @@
-from typing import TypedDict
-from fastapi import APIRouter, HTTPException, Request, Response, status
+from typing import Literal, TypedDict
+from fastapi import APIRouter, Form, HTTPException, Request, Response, status
 from fastapi.exceptions import FastAPIError
 from ..config import logger
 from http import HTTPStatus
 
-from src.db import User, create_user, get_user
+from src.db import UpdateUser, User, create_user, get_user, update_user
 
 
 class RegisterUserDTO(TypedDict):
@@ -15,6 +15,17 @@ class RegisterUserDTO(TypedDict):
 class LoginDTO(TypedDict):
     username: str
     password: str
+
+
+class SetupDTO(TypedDict):
+    first_name: str
+    last_name: str
+    age: int
+    height: int
+    gender: Literal["male", "female", "other"]
+    allergies: str
+    issues: str
+    goal: str
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -37,6 +48,38 @@ async def register(data: RegisterUserDTO):
             username=data["username"],
             password=data["password"],
             status="setup",
+        )
+    )
+
+
+@router.post("/setup")
+async def setup(
+    request: Request,
+    first_name: str = Form(...),
+    last_name: str = Form(...),
+    age: int = Form(...),
+    height: int = Form(...),
+    gender: Literal["male", "female", "other"] = Form(...),
+    allergies: str = Form(...),
+    issues: str = Form(...),
+    goal: str = Form(...),
+):
+    username = request.cookies.get("user")
+    if username is None:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
+
+    update_user(
+        UpdateUser(
+            username=username,
+            first_name=first_name,
+            last_name=last_name,
+            age=age,
+            height=height,
+            gender=gender,
+            allergies=allergies,
+            issues=issues,
+            goal=goal,
+            status="finished",
         )
     )
 

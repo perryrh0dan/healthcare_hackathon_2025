@@ -3,10 +3,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
 interface User {
-  id: string;
   username: string;
-  email?: string;
-  [key: string]: unknown;
+  status: 'setup' | 'finished'
 }
 
 export interface AuthContextType {

@@ -1,5 +1,5 @@
 from typing import Literal, Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, create_model
 from datetime import datetime
 import uuid
 
@@ -19,8 +19,30 @@ class User(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     age: Optional[int] = None
+    height: Optional[int] = None
+    gender: Optional[Literal["male", "female", "other"]] = "other"
     status: Literal["setup", "finished"]
+    allergies: Optional[str] = None
+    issues: Optional[str] = None
+    goal: Optional[str] = None
     events: List[Event] = []
+
+
+class UpdateUser(User):
+    password: Optional[str] = None
+
+
+def update_user(update: UpdateUser):
+    user = get_user(update.username)
+    if user is None:
+        raise RuntimeError()
+
+    global users
+    users = [user for user in users if user.username != user.username]
+
+    update.password = user.password
+
+    users.append(update)
 
 
 def create_user(user: User):
@@ -34,7 +56,9 @@ def get_user(username: str):
     return None
 
 
-def add_event(username: str, description: str, from_timestamp: datetime, to_timestamp: datetime):
+def add_event(
+    username: str, description: str, from_timestamp: datetime, to_timestamp: datetime
+):
     user = get_user(username)
     if user is None:
         return None
@@ -42,7 +66,7 @@ def add_event(username: str, description: str, from_timestamp: datetime, to_time
         id=str(uuid.uuid4()),
         description=description,
         from_timestamp=from_timestamp,
-        to_timestamp=to_timestamp
+        to_timestamp=to_timestamp,
     )
     user.events.append(event)
     return event
@@ -57,7 +81,13 @@ def remove_event(username: str, event_id: str):
     return len(user.events) < original_count
 
 
-def edit_event(username: str, event_id: str, description: str, from_timestamp: datetime, to_timestamp: datetime):
+def edit_event(
+    username: str,
+    event_id: str,
+    description: str,
+    from_timestamp: datetime,
+    to_timestamp: datetime,
+):
     user = get_user(username)
     if user is None:
         return False
