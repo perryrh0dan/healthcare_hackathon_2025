@@ -3,7 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Link } from '@tanstack/react-router';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import Message from '../components/ui/message';
 
 const Home = () => {
@@ -23,18 +23,27 @@ const Home = () => {
   };
 
   return (
-    <div className="relative min-h-screen p-8">
-      {!showTop && (
-        <Button
-          onClick={() => setShowTop(true)}
-          className="fixed top-[70px] left-1/2 z-10 flex h-10 w-10 -translate-x-1/2 transform items-center justify-center rounded-full p-0"
-        >
-          <ChevronDown size={20} />
-        </Button>
-      )}
+    <div className="relative min-h-screen w-100">
+      <Button
+        onClick={() => setShowTop(!showTop)}
+        className="fixed top-[70px] left-1/2 z-10 flex h-10 w-10 -translate-x-1/2 transform items-center justify-center rounded-full p-0"
+      >
+        {showTop ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+      </Button>
 
-      <div className={`mb-8 ${showTop ? 'opacity-100' : 'opacity-0'}`}>
-        <p className="text-gray-800">Welcome {user?.username}!</p>
+      <div
+        className={`mb-8 transition-all duration-500  
+            ${showTop 
+              ? ' opacity-100 visible block' 
+              : 'max-h-0 overflow-hidden hidden'
+            } 
+            rounded-lg p-3 shadow-lg`}
+      >
+        <div className="col-span-2 rounded-lg bg-rose-100 p-4 shadow-lg">
+          <h3 className="mb-2 text-lg font-semibold">
+            Welcome {user?.username}!
+          </h3>
+        </div>
         <div className="mt-4 grid grid-cols-2 gap-4">
           <div className="rounded-lg bg-green-100 p-4 shadow-lg">
             <h3 className="mb-2 text-lg font-semibold">Health Goals</h3>
@@ -42,11 +51,7 @@ const Home = () => {
           </div>
           <div className="rounded-lg bg-cyan-100 p-4 shadow-lg">
             <h3 className="mb-2 text-lg font-semibold">Food Calendar</h3>
-            <Link to="/calendar">
-              <Button className="w-full bg-cyan-600 hover:bg-cyan-700">
-                Go to Calendar
-              </Button>
-            </Link>
+            <p>Coming soon</p>
           </div>
           <div className="rounded-lg bg-teal-100 p-4 shadow-lg">
             <h3 className="mb-2 text-lg font-semibold">Daily Questions</h3>
@@ -61,15 +66,21 @@ const Home = () => {
             <p>Logged in today</p>
           </div>
           <div className="rounded-lg bg-orange-100 p-4 shadow-lg">
-            <h3 className="mb-2 text-lg font-semibold">
-              Upcoming Appointments
-            </h3>
+            <h3 className="mb-2 text-lg font-semibold">Appointments</h3>
             <p>No upcoming appointments</p>
+          </div>
+          <div className="rounded-lg bg-purple-100 p-4 shadow-lg">
+            <h3 className="mb-2 text-lg font-semibold">Setup</h3>
+            <Link to="/setup">
+              <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                Go to Setup
+              </Button>
+            </Link>
           </div>
         </div>
       </div>
 
-      <div className="mb-20 flex-1 overflow-y-auto px-4">
+      <div className="mb-20 flex-1 overflow-y-auto ">
         {messages.map((msg, index) => (
           <Message key={index} text={msg.text} sender={msg.sender} />
         ))}

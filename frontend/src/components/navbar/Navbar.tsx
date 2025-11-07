@@ -1,10 +1,11 @@
 import { Link } from '@tanstack/react-router';
 import { useAuth } from '../../contexts/AuthContext';
 import { Button } from '../ui/button';
+import { LogOut } from 'lucide-react';
 import logo from '../../assets/logo-erlangen.png';
 
 const Navbar = () => {
-  const { logout } = useAuth();
+  const { logout, isAuthenticated } = useAuth();
 
   return (
     <header className="bg-primary text-primary-foreground p-4 shadow-md">
@@ -14,9 +15,11 @@ const Navbar = () => {
             <img src={logo} alt="Erlangen Logo" className="h-10 w-auto" />
           </Link>
         </div>
-        <Button onClick={logout} variant="outline" style={{ color: '#333' }}>
-          Logout
-        </Button>
+        {isAuthenticated && (
+          <Button onClick={logout} variant="outline" style={{ color: '#333' }}>
+            <LogOut className="h-4 w-4" />
+          </Button>
+        )}
       </div>
     </header>
   );
