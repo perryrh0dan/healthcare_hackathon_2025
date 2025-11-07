@@ -1,7 +1,17 @@
 from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END, START
 from langchain_core.messages import BaseMessage, ToolMessage, SystemMessage
-from ..tools import retrieve_context, get_calendar, add_calendar_event, remove_calendar_event, edit_calendar_event
+from ..tools import (
+    retrieve_context,
+    get_calendar,
+    add_calendar_event,
+    remove_calendar_event,
+    edit_calendar_event,
+    add_meal_to_calendar,
+    get_meals_for_day,
+    edit_meal,
+    remove_meal,
+)
 from ..config import logger
 
 
@@ -23,6 +33,10 @@ class ChatGraph(BaseGraph):
                 "add_calendar_event": add_calendar_event,
                 "remove_calendar_event": remove_calendar_event,
                 "edit_calendar_event": edit_calendar_event,
+                "add_meal_to_calendar": add_meal_to_calendar,
+                "get_meals_for_day": get_meals_for_day,
+                "edit_meal": edit_meal,
+                "remove_meal": remove_meal,
             }
             self.llm = llm.bind_tools(list(self.tools.values()))
             workflow = StateGraph(state_schema=AgentState)
@@ -54,7 +68,7 @@ class ChatGraph(BaseGraph):
             return "An error occurred while processing your request."
 
     def supervisor_agent(self, state: AgentState):
-        context_msg = f"User's daily answers: {state['daily_answers']}. Registration info: {state['registration_answers']}."
+        context_msg = f"You are a healthcare agent inside a product from 316er studios. You get user messages and potentially images. Try to match the tone of the user. If the user is scarred because of a illness try to support him. If he needs to go to the doctor try to motivate him. Try to identify potentiall health issues early on. Add events to the calendar if needed. Replan the users diet on request. Be a proactive agent. User's daily answers: {state['daily_answers']}. Registration info: {state['registration_answers']}."
         system_message = SystemMessage(content=context_msg)
         messages_with_context = [system_message] + state["messages"]
 
