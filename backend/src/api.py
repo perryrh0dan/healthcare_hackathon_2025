@@ -6,11 +6,17 @@ from datetime import datetime
 
 from .routes import documents, user, calendar, daily
 from .state import graph, users, daily_questions
-from .db import create_conversation, get_conversation, update_conversation, Message, Conversation
+from .db import (
+    create_conversation,
+    get_conversation,
+    update_conversation,
+    Message,
+    Conversation,
+)
 from langchain_core.messages import HumanMessage, AIMessage
 from .config import logger
 
-app = FastAPI()
+app = FastAPI(root_path="/api")
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,16 +30,6 @@ app.include_router(documents.router)
 app.include_router(user.router)
 app.include_router(calendar.router)
 app.include_router(daily.router)
-
-
-
-
-@app.post("/registration")
-def submit_registration_answers(answers: list[Dict[str, str]]):
-    user_id = str(uuid4())
-    users[user_id] = answers
-    logger.info(f"New user registered with ID {user_id}: {answers}")
-    return {"user_id": user_id}
 
 
 @app.websocket("/ws/chat")

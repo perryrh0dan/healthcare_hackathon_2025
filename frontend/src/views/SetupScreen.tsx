@@ -10,17 +10,21 @@ import {
 } from '@/components/ui/select';
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useNavigate } from '@tanstack/react-router';
 
 interface Question {
   question: string;
   type: string;
   options?: { label: string; value: string }[];
   field: string
+  value?: string | number
 }
 
 const SetupScreen = () => {
-  const [answers, setAnswers] = useState<Record<number, string>>({});
-  const [touched, setTouched] = useState<Record<number, boolean>>({});
+  const navigate = useNavigate()
+
+  const [answers, setAnswers] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [file, setFile] = useState<File | null>(null);
 
   const {
@@ -30,7 +34,7 @@ const SetupScreen = () => {
   } = useQuery({
     queryKey: ['registration'],
     queryFn: async () => {
-      const response = await fetch(`http://localhost:8008/registration`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/setup`);
       if (!response.ok) {
         throw new Error('Failed to fetch registration questions');
       }
@@ -41,7 +45,7 @@ const SetupScreen = () => {
   const { mutate: submitProfile } = useMutation({
     mutationKey: ['setup'],
     mutationFn: async (formData: FormData) => {
-      const response = await fetch('http://localhost:8008/users/setup', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/setup`, {
         method: 'POST',
         body: formData,
         credentials: 'include'
@@ -51,19 +55,21 @@ const SetupScreen = () => {
       }
     },
     onSuccess: () => {
-      alert('Profile submitted successfully!');
+      navigate({ to: '/home'})
     },
     onError: () => {
-      alert('Error submitting profile.');
     },
   });
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData();
-    Object.entries(answers).map(([key, value]) => {
-      formData.append(key, value || '');
-    });
+    questions.forEach(question => {
+      const value = answers[question.field]
+
+      formData.append(question.field, value || question.value?.toString() || '' );
+    })
+
     if (file) {
       formData.append('electronic_patient_record', file);
     }
@@ -88,7 +94,7 @@ const SetupScreen = () => {
                 <Input
                   id={`question-${question.field}`}
                   type="text"
-                  value={answers[question.field] || ''}
+                  value={answers[question.field] || question.value}
                   onChange={(e) =>
                     setAnswers((prev) => ({ ...prev, [question.field]: e.target.value }))
                   }
@@ -104,7 +110,7 @@ const SetupScreen = () => {
                 <Input
                   id={`question-${question.field}`}
                   type="number"
-                  value={answers[question.field] || ''}
+                  value={answers[question.field] || question.value}
                   onChange={(e) =>
                     setAnswers((prev) => ({ ...prev, [question.field]: e.target.value }))
                   }
@@ -118,7 +124,7 @@ const SetupScreen = () => {
                 />
               ) : question.type === 'enum' ? (
                 <Select
-                  value={answers[question.field] || ''}
+                  value={answers[question.field] || question.value?.toString()}
                   onValueChange={(value) =>
                     setAnswers((prev) => ({ ...prev, [question.field]: value }))
                   }

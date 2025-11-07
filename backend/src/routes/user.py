@@ -1,5 +1,14 @@
-from typing import Literal, TypedDict
-from fastapi import APIRouter, Form, HTTPException, Request, Response, status
+from typing import Literal, Optional, TypedDict
+from fastapi import (
+    APIRouter,
+    File,
+    Form,
+    HTTPException,
+    Request,
+    Response,
+    UploadFile,
+    status,
+)
 from fastapi.exceptions import FastAPIError
 from ..config import logger
 from http import HTTPStatus
@@ -63,10 +72,14 @@ async def setup(
     allergies: str = Form(...),
     issues: str = Form(...),
     goal: str = Form(...),
+    electronic_patient_record: UploadFile = File(...),
 ):
     username = request.cookies.get("user")
     if username is None:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
+
+    data = await electronic_patient_record.read()
+    print(data)
 
     update_user(
         UpdateUser(
@@ -96,7 +109,7 @@ async def login(data: LoginDTO, response: Response):
         max_age=3600,  # seconds
         httponly=True,  # cannot access from JS
         secure=False,  # True if using HTTPS
-        samesite="none",  # Allow cross-origin
+        samesite="strict",  # Allow cross-origin
     )
 
 
@@ -104,3 +117,88 @@ async def login(data: LoginDTO, response: Response):
 async def logout(response: Response):
     response.delete_cookie("user")
     return {"message": "Logged out"}
+
+
+class SetupQuestionOption(TypedDict):
+    label: str
+    value: str
+
+
+class SetupQuestion(TypedDict):
+    question: str
+    type: Literal["text", "number", "enum"]
+    options: Optional[list[SetupQuestionOption]]
+    field: str
+    value: Optional[str]
+
+
+@router.get("/setup")
+def get_registration_questions(request: Request):
+    username = request.cookies.get("user")
+    if username is None:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
+
+    user = get_user(username)
+
+    return [
+        SetupQuestion(
+            question="What is your first name?",
+            type="text",
+            field="first_name",
+            options=None,
+            value=user.first_name if user else None,
+        ),
+        SetupQuestion(
+            question="What is your last name?",
+            type="text",
+            field="last_name",
+            options=None,
+            value=user.last_name if user else None,
+        ),
+        SetupQuestion(
+            question="What is your age?",
+            type="number",
+            field="age",
+            options=None,
+            value=user.age if user else None,
+        ),
+        SetupQuestion(
+            question="What is your height?",
+            type="number",
+            field="height",
+            options=None,
+            value=user.height if user else None,
+        ),
+        SetupQuestion(
+            question="What is your gender?",
+            type="enum",
+            options=[
+                SetupQuestionOption(label="Male", value="male"),
+                SetupQuestionOption(label="Female", value="female"),
+                SetupQuestionOption(label="Other", value="other"),
+            ],
+            field="gender",
+            value=user.gender if user else None,
+        ),
+        SetupQuestion(
+            question="Do you have any allergies. If so what are those?",
+            type="text",
+            field="allergies",
+            options=None,
+            value=user.allergies if user else None,
+        ),
+        SetupQuestion(
+            question="Do you have typical health issues. If so what are those?",
+            type="text",
+            field="issues",
+            options=None,
+            value=user.issues if user else None,
+        ),
+        SetupQuestion(
+            question="What is your goal?",
+            type="text",
+            field="goal",
+            options=None,
+            value=user.goal if user else None,
+        ),
+    ]

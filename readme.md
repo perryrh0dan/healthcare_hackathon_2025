@@ -24,6 +24,16 @@
 - python (lang + fastApi)
 - react
 
+## Environment Setup
+
+Copy `backend/example.env` to `backend/.env` and fill in your values:
+
+- MODEL: Choose the LLM model (default: grok)
+- AWS_ACCESS_KEY_ID: Your AWS access key
+- AWS_SECRET_ACCESS_KEY: Your AWS secret key
+- AWS_DEFAULT_REGION: AWS region (default: us-west-2)
+- AWS_SESSION_TOKEN: Optional session token for temporary creds
+
 ## Todo
 
 - upload data to s3 / casandra
