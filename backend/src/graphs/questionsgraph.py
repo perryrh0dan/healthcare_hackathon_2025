@@ -28,7 +28,6 @@ class QuestionList(BaseModel):
 class AgentState(TypedDict):
     user: User
     messages: List[BaseMessage]
-    summarization: str
     base_questions: list[Any]
 
 
@@ -37,10 +36,8 @@ class QuestionsGraph(BaseGraph):
         try:
             self.llm = llm
             workflow = StateGraph(state_schema=AgentState)
-            workflow.add_node("summarizer", self.summarization_agent)
             workflow.add_node("supervisor", self.supervisor_agent)
-            workflow.add_edge(START, "summarizer")
-            workflow.add_edge("summarizer", "supervisor")
+            workflow.add_edge(START, "supervisor")
             workflow.add_edge("supervisor", END)
             self.graph = workflow.compile()
             logger.info("Graph initialized successfully")
@@ -56,7 +53,6 @@ class QuestionsGraph(BaseGraph):
                     "user": user,
                     "messages": history,
                     "base_questions": base_questions,
-                    "summarization": "",
                 }
             )
             ai_response = result["messages"][-1]
@@ -66,26 +62,14 @@ class QuestionsGraph(BaseGraph):
             logger.error(f"Error during graph chat: {e}")
             return []
 
-    def summarization_agent(self, state: AgentState):
-        history = [
-            SystemMessage(content="Summarize the previous conversation:"),
-            HumanMessage(content="\n".join([str(msg) for msg in state["messages"]])),
-        ]
 
-        summary_response = self.llm.invoke(history)
-        summary_msg = f"Conversation Summary: {summary_response.content}"
-        state["summarization"] = summary_msg
-        return state
 
     def supervisor_agent(self, state: AgentState):
         base_questions = state["base_questions"]
         recent_health_summary = state["user"].epa_summary
-        recent_chat_summary = state["summarization"]
         question_prompt = f"""Base questions already asked: {base_questions}
 
 Recent health summary: {recent_health_summary}
-
-Recent chat summary: {recent_chat_summary}
 
 Generate up to 2 additional daily health questions if needed, different from the base ones."""
         structured_llm = self.llm.with_structured_output(QuestionList)

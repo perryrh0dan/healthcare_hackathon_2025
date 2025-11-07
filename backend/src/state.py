@@ -2,6 +2,7 @@ from .clients.llm import LLM
 from .graphs.chatgraph import ChatGraph
 from .graphs.questionsgraph import QuestionsGraph
 from .graphs.dietgraph import DietGraph
+from .graphs.summarizationgraph import SummarizationGraph
 from .config import logger
 
 try:
@@ -9,6 +10,7 @@ try:
     graph = ChatGraph(llm.llm)
     questions_graph = QuestionsGraph(llm.llm)
     diet_graph = DietGraph(llm.llm)
+    summarization_graph = SummarizationGraph(llm.llm)
     logger.info("API components initialized")
 except Exception as e:
     logger.error(f"Failed to initialize API components: {e}")

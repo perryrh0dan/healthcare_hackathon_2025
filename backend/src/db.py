@@ -44,7 +44,8 @@ CREATE TABLE IF NOT EXISTS users (
     allergies TEXT,
     issues TEXT,
     goal TEXT,
-    epa_summary TEXT
+    epa_summary TEXT,
+    recent_summary TEXT
 )
 """)
 
@@ -89,10 +90,17 @@ CREATE TABLE IF NOT EXISTS daily_answers (
 
 conn.commit()
 
+# Add recent_summary column if not exists
+try:
+    cursor.execute("ALTER TABLE users ADD COLUMN recent_summary TEXT;")
+    conn.commit()
+except sqlite3.OperationalError:
+    pass  # Column already exists
+
 
 class User(BaseModel):
     username: str
-    password: str
+    password: Optional[str]
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     age: Optional[int] = None
@@ -103,11 +111,13 @@ class User(BaseModel):
     issues: Optional[str] = None
     goal: Optional[str] = None
     epa_summary: Optional[str] = None
+    recent_summary: Optional[str] = None
     events: List[Event] = []
 
 
 class UpdateUser(User):
     password: Optional[str] = None
+    recent_summary: Optional[str] = None
 
 
 def update_user(update: UpdateUser):
@@ -131,7 +141,8 @@ def update_user(update: UpdateUser):
         allergies = ?,
         issues = ?,
         goal = ?,
-        epa_summary = ?
+        epa_summary = ?,
+        recent_summary = ?
     WHERE username = ?
     """,
         (
@@ -146,6 +157,7 @@ def update_user(update: UpdateUser):
             update.issues,
             update.goal,
             update.epa_summary,
+            update.recent_summary,
             update.username,
         ),
     )
@@ -155,8 +167,8 @@ def update_user(update: UpdateUser):
 def create_user(user: User):
     cursor.execute(
         """
-    INSERT INTO users (username, password, first_name, last_name, age, height, gender, status, allergies, issues, goal, epa_summary)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO users (username, password, first_name, last_name, age, height, gender, status, allergies, issues, goal, epa_summary, recent_summary)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """,
         (
             user.username,
@@ -171,6 +183,7 @@ def create_user(user: User):
             user.issues,
             user.goal,
             user.epa_summary,
+            user.recent_summary,
         ),
     )
     conn.commit()
@@ -193,6 +206,7 @@ def get_user(username: str):
             issues=row[9],
             goal=row[10],
             epa_summary=row[11],
+            recent_summary=row[12],
             events=get_user_events(username) or [],
         )
     return None
@@ -386,3 +400,19 @@ def get_daily_answers(user_id: str) -> List[Dict[str, Any]]:
     if row:
         return json.loads(row[0])
     return []
+
+
+def update_recent_summary(username: str, summary: str):
+    cursor.execute(
+        "UPDATE users SET recent_summary = ? WHERE username = ?",
+        (summary, username),
+    )
+    conn.commit()
+
+
+def get_recent_summary(username: str) -> Optional[str]:
+    cursor.execute("SELECT recent_summary FROM users WHERE username = ?", (username,))
+    row = cursor.fetchone()
+    if row:
+        return row[0]
+    return None
