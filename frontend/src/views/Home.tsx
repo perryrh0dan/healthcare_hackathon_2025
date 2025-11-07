@@ -1,8 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { Button } from '../components/ui/button';
 import { Link } from '@tanstack/react-router';
-import { ChevronDown, ChevronUp } from 'lucide-react';
 import Chat from '../components/chat/Chat';
 
 const Home = () => {
@@ -10,20 +8,17 @@ const Home = () => {
   const [showTop, setShowTop] = useState(true);
 
   const handleChatSend = () => {
-    setShowTop(old => !old)
+    if (showTop) {
+      setShowTop(false)
+    } 
   }
 
   return (
-    <div className="relative min-h-screen w-100">
-
-      { showTop && ( <div
-        className={`mb-8 transition-all duration-500 grid grid-cols-2 gap-4 ${
-          showTop
-            ? 'visible block opacity-100'
-            : 'hidden max-h-0 overflow-hidden'
-        } `}
+    <div className="min-h-screen w-100 flex flex-col gap-4">
+      <h2 className='text-4xl font-semibold'>Weekly<br />Recap</h2>
+      <div
+        className="grow transition-all duration-500 grid grid-cols-2 gap-4"
       >
-        <h2 className='text-4xl font-semibold'>Weekly<br />Recap</h2>
         <div className="col-span-2 rounded-lg bg-green-300 p-6 shadow-lg">
           <h3 className="text-lg font-semibold text-white">
             Welcome back {user?.first_name}!
@@ -55,17 +50,9 @@ const Home = () => {
             <h3 className="mb-2 text-lg font-semibold">Setup</h3>
           </Link>
         </div>
-      </div> ) }
-      <div className='h-10 w-full flex items-center justify-center'>
-        <Button
-          onClick={() => setShowTop(!showTop)}
-          className="rounded-full"
-        >
-          {showTop ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-        </Button>
       </div>
-      <div className="flex-1">
-        <Chat open={!showTop} onSend={handleChatSend} />
+      <div className="">
+        <Chat open={!showTop} onSend={handleChatSend} onClose={() => setShowTop(true)} onOpen={() => setShowTop(false)} />
       </div>
     </div>
   );
