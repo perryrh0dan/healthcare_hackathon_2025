@@ -2,6 +2,8 @@ from typing import Literal, Optional, List, Dict, Any
 from pydantic import BaseModel
 from datetime import datetime
 import uuid
+import sqlite3
+import json
 
 
 class Event(BaseModel):
@@ -23,8 +25,60 @@ class Conversation(BaseModel):
     state: Dict[str, Any] = {}
 
 
-users = []
-conversations = {}
+# Database setup
+conn = sqlite3.connect("healthcare.db", check_same_thread=False)
+conn.execute("PRAGMA foreign_keys = ON")
+cursor = conn.cursor()
+
+# Create tables
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    password TEXT NOT NULL,
+    first_name TEXT,
+    last_name TEXT,
+    age INTEGER,
+    height INTEGER,
+    gender TEXT,
+    status TEXT NOT NULL,
+    allergies TEXT,
+    issues TEXT,
+    goal TEXT
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS events (
+    id TEXT PRIMARY KEY,
+    username TEXT NOT NULL,
+    description TEXT NOT NULL,
+    from_timestamp TEXT NOT NULL,
+    to_timestamp TEXT NOT NULL,
+    FOREIGN KEY (username) REFERENCES users (username)
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS conversations (
+    id TEXT PRIMARY KEY,
+    user_id TEXT NOT NULL,
+    state TEXT,
+    FOREIGN KEY (user_id) REFERENCES users (username)
+)
+""")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    conversation_id TEXT NOT NULL,
+    role TEXT NOT NULL,
+    content TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    FOREIGN KEY (conversation_id) REFERENCES conversations (id)
+)
+""")
+
+conn.commit()
 
 
 class User(BaseModel):
@@ -51,22 +105,82 @@ def update_user(update: UpdateUser):
     if user is None:
         raise RuntimeError()
 
-    global users
-    users = [user for user in users if user.username != user.username]
+    # Use existing password if not provided
+    password = update.password or user.password
 
-    update.password = user.password
-
-    users.append(update)
+    cursor.execute(
+        """
+    UPDATE users SET
+        password = ?,
+        first_name = ?,
+        last_name = ?,
+        age = ?,
+        height = ?,
+        gender = ?,
+        status = ?,
+        allergies = ?,
+        issues = ?,
+        goal = ?
+    WHERE username = ?
+    """,
+        (
+            password,
+            update.first_name,
+            update.last_name,
+            update.age,
+            update.height,
+            update.gender,
+            update.status,
+            update.allergies,
+            update.issues,
+            update.goal,
+            update.username,
+        ),
+    )
+    conn.commit()
 
 
 def create_user(user: User):
-    users.append(user)
+    cursor.execute(
+        """
+    INSERT INTO users (username, password, first_name, last_name, age, height, gender, status, allergies, issues, goal)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """,
+        (
+            user.username,
+            user.password,
+            user.first_name,
+            user.last_name,
+            user.age,
+            user.height,
+            user.gender,
+            user.status,
+            user.allergies,
+            user.issues,
+            user.goal,
+        ),
+    )
+    conn.commit()
 
 
 def get_user(username: str):
-    for user in users:
-        if user.username == username:
-            return user
+    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+    row = cursor.fetchone()
+    if row:
+        return User(
+            username=row[0],
+            password=row[1],
+            first_name=row[2],
+            last_name=row[3],
+            age=row[4],
+            height=row[5],
+            gender=row[6],
+            status=row[7],
+            allergies=row[8],
+            issues=row[9],
+            goal=row[10],
+            events=get_user_events(username) or [],
+        )
     return None
 
 
@@ -76,23 +190,35 @@ def add_event(
     user = get_user(username)
     if user is None:
         return None
-    event = Event(
-        id=str(uuid.uuid4()),
+    event_id = str(uuid.uuid4())
+    cursor.execute(
+        """
+    INSERT INTO events (id, username, description, from_timestamp, to_timestamp)
+    VALUES (?, ?, ?, ?, ?)
+    """,
+        (
+            event_id,
+            username,
+            description,
+            from_timestamp.isoformat(),
+            to_timestamp.isoformat(),
+        ),
+    )
+    conn.commit()
+    return Event(
+        id=event_id,
         description=description,
         from_timestamp=from_timestamp,
         to_timestamp=to_timestamp,
     )
-    user.events.append(event)
-    return event
 
 
 def remove_event(username: str, event_id: str):
-    user = get_user(username)
-    if user is None:
-        return False
-    original_count = len(user.events)
-    user.events = [e for e in user.events if e.id != event_id]
-    return len(user.events) < original_count
+    cursor.execute(
+        "DELETE FROM events WHERE id = ? AND username = ?", (event_id, username)
+    )
+    conn.commit()
+    return cursor.rowcount > 0
 
 
 def edit_event(
@@ -102,52 +228,131 @@ def edit_event(
     from_timestamp: datetime,
     to_timestamp: datetime,
 ):
-    user = get_user(username)
-    if user is None:
-        return False
-    for event in user.events:
-        if event.id == event_id:
-            event.description = description
-            event.from_timestamp = from_timestamp
-            event.to_timestamp = to_timestamp
-            return True
-    return False
+    cursor.execute(
+        """
+    UPDATE events SET description = ?, from_timestamp = ?, to_timestamp = ?
+    WHERE id = ? AND username = ?
+    """,
+        (
+            description,
+            from_timestamp.isoformat(),
+            to_timestamp.isoformat(),
+            event_id,
+            username,
+        ),
+    )
+    conn.commit()
+    return cursor.rowcount > 0
 
 
 def get_user_events(username: str):
-    user = get_user(username)
-    if user is None:
-        return None
-    return user.events
+    cursor.execute(
+        "SELECT id, description, from_timestamp, to_timestamp FROM events WHERE username = ?",
+        (username,),
+    )
+    rows = cursor.fetchall()
+    events = []
+    for row in rows:
+        events.append(
+            Event(
+                id=row[0],
+                description=row[1],
+                from_timestamp=datetime.fromisoformat(row[2]),
+                to_timestamp=datetime.fromisoformat(row[3]),
+            )
+        )
+    return events
 
 
-def get_user_events_between_timestamps(username: str, from_timestamp: datetime, to_timestamp: datetime):
-    user = get_user(username)
-    if user is None:
-        return None
-    filtered_events = [e for e in user.events if e.from_timestamp < to_timestamp and e.to_timestamp > from_timestamp]
-    return filtered_events
+def get_user_events_between_timestamps(
+    username: str, from_timestamp: datetime, to_timestamp: datetime
+):
+    cursor.execute(
+        """
+    SELECT id, description, from_timestamp, to_timestamp FROM events
+    WHERE username = ? AND from_timestamp < ? AND to_timestamp > ?
+    """,
+        (username, to_timestamp.isoformat(), from_timestamp.isoformat()),
+    )
+    rows = cursor.fetchall()
+    events = []
+    for row in rows:
+        events.append(
+            Event(
+                id=row[0],
+                description=row[1],
+                from_timestamp=datetime.fromisoformat(row[2]),
+                to_timestamp=datetime.fromisoformat(row[3]),
+            )
+        )
+    return events
 
 
 def create_conversation(user_id: str, conversation_id: str):
-    global conversations
-    if user_id not in conversations:
-        conversations[user_id] = {}
-    conversations[user_id][conversation_id] = Conversation(id=conversation_id)
+    cursor.execute(
+        "INSERT INTO conversations (id, user_id, state) VALUES (?, ?, ?)",
+        (conversation_id, user_id, json.dumps({})),
+    )
+    conn.commit()
 
 
 def get_conversation(user_id: str, conversation_id: str) -> Optional[Conversation]:
-    if user_id not in conversations:
+    cursor.execute(
+        "SELECT state FROM conversations WHERE id = ? AND user_id = ?",
+        (conversation_id, user_id),
+    )
+    row = cursor.fetchone()
+    if not row:
         return None
-    return conversations[user_id].get(conversation_id)
+    state = json.loads(row[0])
+    # Get messages
+    cursor.execute(
+        "SELECT role, content, timestamp FROM messages WHERE conversation_id = ? ORDER BY timestamp",
+        (conversation_id,),
+    )
+    message_rows = cursor.fetchall()
+    messages = []
+    for msg_row in message_rows:
+        messages.append(
+            Message(
+                role=msg_row[0],
+                content=msg_row[1],
+                timestamp=datetime.fromisoformat(msg_row[2]),
+            )
+        )
+    return Conversation(id=conversation_id, messages=messages, state=state)
 
 
-def update_conversation(user_id: str, conversation_id: str, messages: List[Message], state: Dict[str, Any]):
-    global conversations
-    if user_id not in conversations:
-        conversations[user_id] = {}
-    conversations[user_id][conversation_id] = Conversation(id=conversation_id, messages=messages, state=state)
+def update_conversation(
+    user_id: str, conversation_id: str, messages: List[Message], state: Dict[str, Any]
+):
+    # Update state
+    cursor.execute(
+        "UPDATE conversations SET state = ? WHERE id = ? AND user_id = ?",
+        (json.dumps(state), conversation_id, user_id),
+    )
+    # Delete existing messages
+    cursor.execute("DELETE FROM messages WHERE conversation_id = ?", (conversation_id,))
+    # Insert new messages
+    for message in messages:
+        cursor.execute(
+            "INSERT INTO messages (conversation_id, role, content, timestamp) VALUES (?, ?, ?, ?)",
+            (
+                conversation_id,
+                message.role,
+                message.content,
+                message.timestamp.isoformat(),
+            ),
+        )
+    conn.commit()
 
 
 def get_user_conversations(user_id: str) -> Dict[str, Conversation]:
-    return conversations.get(user_id, {})
+    cursor.execute("SELECT id FROM conversations WHERE user_id = ?", (user_id,))
+    rows = cursor.fetchall()
+    conversations = {}
+    for row in rows:
+        conv = get_conversation(user_id, row[0])
+        if conv:
+            conversations[row[0]] = conv
+    return conversations
