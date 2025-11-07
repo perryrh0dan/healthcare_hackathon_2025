@@ -75,9 +75,9 @@ cursor.execute(
     """
 CREATE TABLE IF NOT EXISTS conversations (
     id TEXT PRIMARY KEY,
-    user_id TEXT NOT NULL,
+    username TEXT NOT NULL,
     state TEXT,
-    FOREIGN KEY (user_id) REFERENCES users (username)
+    FOREIGN KEY (username) REFERENCES users (username)
 )
 """
 )
@@ -99,9 +99,11 @@ CREATE TABLE IF NOT EXISTS messages (
 cursor.execute(
     """
 CREATE TABLE IF NOT EXISTS daily_answers (
-    user_id TEXT PRIMARY KEY,
+    username TEXT,
     answers TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users (username)
+    date TEXT NOT NULL,
+    FOREIGN KEY (username) REFERENCES users (username)
+    PRIMARY KEY (username, date)
 )
 """
 )
@@ -109,11 +111,11 @@ CREATE TABLE IF NOT EXISTS daily_answers (
 cursor.execute(
     """
 CREATE TABLE IF NOT EXISTS daily_questions (
-    user_id TEXT NOT NULL,
+    username TEXT NOT NULL,
     date TEXT NOT NULL,
     questions TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users (username),
-    PRIMARY KEY (user_id, date)
+    FOREIGN KEY (username) REFERENCES users (username),
+    PRIMARY KEY (username, date)
 )
 """
 )
@@ -121,11 +123,11 @@ CREATE TABLE IF NOT EXISTS daily_questions (
 cursor.execute(
     """
 CREATE TABLE IF NOT EXISTS daily_dashboard_widgets (
-    user_id TEXT NOT NULL,
+    username TEXT NOT NULL,
     date TEXT NOT NULL,
     widgets TEXT NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users (username),
-    PRIMARY KEY (user_id, date)
+    FOREIGN KEY (username) REFERENCES users (username),
+    PRIMARY KEY (username, date)
 )
 """
 )
@@ -380,18 +382,18 @@ def get_user_events_between_timestamps(
     return events
 
 
-def create_conversation(user_id: str, conversation_id: str):
+def create_conversation(username: str, conversation_id: str):
     cursor.execute(
-        "INSERT INTO conversations (id, user_id, state, title) VALUES (?, ?, ?, ?)",
-        (conversation_id, user_id, json.dumps({}), None),
+        "INSERT INTO conversations (id, username, state, title) VALUES (?, ?, ?, ?)",
+        (conversation_id, username, json.dumps({}), None),
     )
     conn.commit()
 
 
-def get_conversation(user_id: str, conversation_id: str) -> Optional[Conversation]:
+def get_conversation(username: str, conversation_id: str) -> Optional[Conversation]:
     cursor.execute(
-        "SELECT state, title FROM conversations WHERE id = ? AND user_id = ?",
-        (conversation_id, user_id),
+        "SELECT state, title FROM conversations WHERE id = ? AND username = ?",
+        (conversation_id, username),
     )
     row = cursor.fetchone()
     if not row:
@@ -418,12 +420,16 @@ def get_conversation(user_id: str, conversation_id: str) -> Optional[Conversatio
 
 
 def update_conversation(
-    user_id: str, conversation_id: str, messages: List[Message], state: Dict[str, Any], title: Optional[str] = None
+    username: str,
+    conversation_id: str,
+    messages: List[Message],
+    state: Dict[str, Any],
+    title: Optional[str] = None,
 ):
     # Update state and title
     cursor.execute(
-        "UPDATE conversations SET state = ?, title = ? WHERE id = ? AND user_id = ?",
-        (json.dumps(state), title, conversation_id, user_id),
+        "UPDATE conversations SET state = ?, title = ? WHERE id = ? AND username = ?",
+        (json.dumps(state), title, conversation_id, username),
     )
     # Delete existing messages
     cursor.execute("DELETE FROM messages WHERE conversation_id = ?", (conversation_id,))
@@ -442,30 +448,28 @@ def update_conversation(
     conn.commit()
 
 
-def get_user_conversations(user_id: str) -> Dict[str, Conversation]:
-    cursor.execute("SELECT id FROM conversations WHERE user_id = ?", (user_id,))
+def get_user_conversations(username: str) -> Dict[str, Conversation]:
+    cursor.execute("SELECT id FROM conversations WHERE username = ?", (username,))
     rows = cursor.fetchall()
     conversations = {}
     for row in rows:
-        conv = get_conversation(user_id, row[0])
+        conv = get_conversation(username, row[0])
         if conv:
             conversations[row[0]] = conv
     return conversations
 
 
-def save_daily_answers(user_id: str, answers: List[Answer]):
-    current_answers = get_daily_answers(user_id)
-    new_entry = {"date": datetime.now().isoformat(), "answers": answers}
-    current_answers.append(new_entry)
+def save_daily_answers(username: str, answers: List[Answer]):
+    now = datetime.now().isoformat()
     cursor.execute(
-        "INSERT OR REPLACE INTO daily_answers (user_id, answers) VALUES (?, ?)",
-        (user_id, json.dumps(current_answers)),
+        "INSERT INTO daily_answers (username, date, answers) VALUES (?, ?, ?)",
+        (username, now, json.dumps(answers)),
     )
     conn.commit()
 
 
-def get_daily_answers(user_id: str) -> List[Dict[str, Any]]:
-    cursor.execute("SELECT answers FROM daily_answers WHERE user_id = ?", (user_id,))
+def get_daily_answers(username: str) -> List[Dict[str, Any]]:
+    cursor.execute("SELECT answers FROM daily_answers WHERE username = ?", (username,))
     row = cursor.fetchone()
     if row:
         loaded = json.loads(row[0])
@@ -482,20 +486,20 @@ def get_daily_answers(user_id: str) -> List[Dict[str, Any]]:
     return []
 
 
-def save_daily_questions(user_id: str, questions: List[Dict[str, Any]]):
+def save_daily_questions(username: str, questions: List[Dict[str, Any]]):
     today = datetime.now().date().isoformat()
     cursor.execute(
-        "INSERT OR REPLACE INTO daily_questions (user_id, date, questions) VALUES (?, ?, ?)",
-        (user_id, today, json.dumps(questions)),
+        "INSERT OR REPLACE INTO daily_questions (username, date, questions) VALUES (?, ?, ?)",
+        (username, today, json.dumps(questions)),
     )
     conn.commit()
 
 
-def get_daily_questions(user_id: str) -> Optional[List[Dict[str, Any]]]:
+def get_daily_questions(username: str) -> Optional[List[Dict[str, Any]]]:
     today = datetime.now().date().isoformat()
     cursor.execute(
-        "SELECT questions FROM daily_questions WHERE user_id = ? AND date = ?",
-        (user_id, today),
+        "SELECT questions FROM daily_questions WHERE username = ? AND date = ?",
+        (username, today),
     )
     row = cursor.fetchone()
     if row:
@@ -503,20 +507,20 @@ def get_daily_questions(user_id: str) -> Optional[List[Dict[str, Any]]]:
     return None
 
 
-def save_daily_dashboard_widgets(user_id: str, widgets: List[Dict[str, Any]]):
+def save_daily_dashboard_widgets(username: str, widgets: List[Dict[str, Any]]):
     today = datetime.now().date().isoformat()
     cursor.execute(
-        "INSERT OR REPLACE INTO daily_dashboard_widgets (user_id, date, widgets) VALUES (?, ?, ?)",
-        (user_id, today, json.dumps(widgets)),
+        "INSERT OR REPLACE INTO daily_dashboard_widgets (username, date, widgets) VALUES (?, ?, ?)",
+        (username, today, json.dumps(widgets)),
     )
     conn.commit()
 
 
-def get_daily_dashboard_widgets(user_id: str) -> Optional[List[Dict[str, Any]]]:
+def get_daily_dashboard_widgets(username: str) -> Optional[List[Dict[str, Any]]]:
     today = datetime.now().date().isoformat()
     cursor.execute(
-        "SELECT widgets FROM daily_dashboard_widgets WHERE user_id = ? AND date = ?",
-        (user_id, today),
+        "SELECT widgets FROM daily_dashboard_widgets WHERE username = ? AND date = ?",
+        (username, today),
     )
     row = cursor.fetchone()
     if row:
@@ -593,7 +597,9 @@ def generate_daily_questions_for_all_users():
         ]
 
         recent_messages = get_recent_messages(username)
-        additional_questions = questions_graph.chat(recent_messages, base_questions, user)
+        additional_questions = questions_graph.chat(
+            recent_messages, base_questions, user
+        )
         additional_questions = additional_questions[:2]
         all_questions = base_questions + additional_questions
 

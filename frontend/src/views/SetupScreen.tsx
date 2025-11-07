@@ -13,6 +13,7 @@ import { useNavigate } from '@tanstack/react-router';
 import useAuthedQuery from '@/hooks/useAuthedQuery';
 import useAuthedMutation from '@/hooks/useAuthedMutation';
 import { useAuth } from '@/contexts';
+import { ArrowLeft } from 'lucide-react';
 
 interface Question {
   question: string;
@@ -90,9 +91,16 @@ const SetupScreen = () => {
 
   return (
     <div className="w-full max-w-md">
-      <div className="bg-card border-border flex flex-col items-center rounded-lg border p-6 shadow-lg">
+      <div className="flex flex-col items-center">
+        <div className='grid grid-cols-[40px_1fr_40px] items-center justify-center w-full'>
+          <ArrowLeft onClick={() => navigate({ to: '/home'})} />
+          <h1 className="text-4xl font-semibold inline-flex justify-center">
+            Personal data
+          </h1>
+          <div></div>
+        </div>
+
         <h1 className="mb-8 text-center text-2xl font-bold">
-          Setup Your Profile
         </h1>
         <form className="w-full max-w-sm space-y-4" onSubmit={handleSubmit}>
           {questions.map((question) => (

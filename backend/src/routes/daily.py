@@ -2,7 +2,13 @@ from http import HTTPStatus
 from typing import List, Literal, Optional, TypedDict
 from fastapi import APIRouter, HTTPException, Depends
 
-from src.db import Answer, save_daily_answers, get_daily_questions as get_stored_daily_questions, save_daily_questions, User
+from src.db import (
+    Answer,
+    save_daily_answers,
+    get_daily_questions as get_stored_daily_questions,
+    save_daily_questions,
+    User,
+)
 from ..state import questions_graph
 from ..utils import get_recent_messages, get_current_user
 from ..config import logger
@@ -85,7 +91,10 @@ class AnswerDTO(TypedDict):
 @router.post("/")
 def submit_daily_answers(data: List[AnswerDTO], user: User = Depends(get_current_user)):
     if not user.needs_daily_questions:
-        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Daily questionnaire already submitted today")
+        raise HTTPException(
+            status_code=HTTPStatus.CONFLICT,
+            detail="Daily questionnaire already submitted today",
+        )
 
     answers = [
         Answer(question=answer["question"], answer=answer["answer"]) for answer in data

@@ -36,19 +36,27 @@ const Question = ({ data, index, total, onNext, onPrev, onSubmit }: QuestionProp
     setAnswers(newAnswers)
   }
 
+  const answer: QuestionAnswer | undefined = answers[index]
+
   const body = (data: QuestionType) => {
     switch (data.type) {
       case 'text':
-        return <Input onChange={(e) => handleChange(e.target.value)} />
+        return <Input value={answer?.answer} autoFocus={true} key={data.question} onChange={(e) => handleChange(e.target.value)} />
       case 'enum':
         return (
-          <EnumQuestion key={data.question} options={ data.options } onChange={handleChange} />
+          <EnumQuestion value={answer?.answer} key={data.question} options={ data.options } onChange={handleChange} />
         )
       case 'scale':
-        return <Slider min={data.from} max={data.to} onChange={(e) => handleChange((e.target as any).value)} />
+        return <Slider value={[ answer === undefined ? data.from : typeof answer?.answer === 'string' ? parseInt(answer.answer) : answer.answer ]} key={data.question} min={data.from} max={data.to} onChange={(e) => handleChange((e.target as any).value)} />
       case 'number':
-        return <Input type="number" onChange={(e) => handleChange(e.target.value)} />
+        return <Input value={answer?.answer} autoFocus={true} key={data.question} type="number" onChange={(e) => handleChange(e.target.value)} />
     } 
+  }
+
+  const handleNext = () => {
+    if (answers[index]) {
+      onNext()
+    }
   }
 
   return (
@@ -72,7 +80,7 @@ const Question = ({ data, index, total, onNext, onPrev, onSubmit }: QuestionProp
             Submit
           </Button>
         ) : (
-          <Button className="w-full" onClick={onNext}>
+          <Button className="w-full" onClick={handleNext}>
             Next
           </Button>
         )}

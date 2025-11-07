@@ -33,8 +33,8 @@ const FoodPlanner = () => {
   const dayMeals = meals[selectedDateKey] || {};
 
   return (
-    <div className="flex min-h-screen w-full flex-col gap-4 p-4">
-      <div className='grid grid-cols-[40px_1fr_40px] items-center justify-center'>
+    <div className="flex min-h-screen w-full flex-col gap-4">
+      <div className='grid grid-cols-[40px_1fr_40px] items-center justify-center w-full'>
         <ArrowLeft onClick={() => navigate({ to: '/home'})} />
         <h2 className="text-4xl font-semibold inline-flex justify-center">Food Planner</h2>
         <div></div>

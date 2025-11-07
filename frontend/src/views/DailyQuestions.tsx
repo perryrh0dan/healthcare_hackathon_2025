@@ -23,7 +23,7 @@ export interface INumberQuestion extends IQuestion {
 
 export interface IEnumQuestion extends IQuestion {
   type: 'enum'
-  options: [{ label: string, value: string | number }]
+  options: [{ label: string, value: string }]
 }
 
 export interface IScaleQuestion extends IQuestion {
@@ -59,7 +59,10 @@ const DailyQuestions = () => {
         body: JSON.stringify(data), 
         credentials: 'include' 
       });
-      if (!response.ok) {
+      if (response.status === 409) {
+        console.warn(response.body)
+        navigate({ to: '/home' })
+      } else if (!response.ok) {
         throw new Error('Failed to fetch daily questions');
       }
       return response.json() as Promise<QuestionType[]>;

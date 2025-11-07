@@ -7,6 +7,7 @@ interface User {
   first_name: string;
   last_name: string;
   status: 'setup' | 'finished'
+  needs_daily_questions: boolean
 }
 
 export interface AuthContextType {
