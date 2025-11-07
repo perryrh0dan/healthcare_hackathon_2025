@@ -8,6 +8,27 @@ from ..config import logger
 from .graph import BaseGraph
 
 
+def convert_messages_to_langchain(messages: List[Any]) -> List[BaseMessage]:
+    """Convert db.Message objects to LangChain BaseMessage objects."""
+    converted = []
+    for msg in messages:
+        if isinstance(msg, BaseMessage):
+            converted.append(msg)
+        elif hasattr(msg, 'role') and hasattr(msg, 'content'):
+            # Assuming it's a db.Message
+            if msg.role == 'user':
+                converted.append(HumanMessage(content=msg.content))
+            elif msg.role == 'assistant':
+                converted.append(AIMessage(content=msg.content))
+            else:
+                # Default to HumanMessage for unknown roles
+                converted.append(HumanMessage(content=msg.content))
+        else:
+            # If it's something else, try to convert to string
+            converted.append(HumanMessage(content=str(msg)))
+    return converted
+
+
 class QuestionOption(BaseModel):
     label: str
     value: str

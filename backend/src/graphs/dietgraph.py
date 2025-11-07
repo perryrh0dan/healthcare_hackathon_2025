@@ -1,6 +1,6 @@
 from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END, START
-from langchain_core.messages import BaseMessage, ToolMessage, SystemMessage
+from langchain_core.messages import BaseMessage, ToolMessage, SystemMessage, HumanMessage, AIMessage
 from ..tools import retrieve_context, add_meal_to_calendar, get_meals_for_day, edit_meal, remove_meal
 from ..config import logger
 
@@ -15,11 +15,27 @@ class AgentState(TypedDict):
 from .graph import BaseGraph
 
 
+def convert_messages_to_langchain(messages: List[Any]) -> List[BaseMessage]:
+    converted = []
+    for msg in messages:
+        if isinstance(msg, BaseMessage):
+            converted.append(msg)
+        elif hasattr(msg, "role") and hasattr(msg, "content"):
+            if msg.role == "user":
+                converted.append(HumanMessage(content=msg.content))
+            elif msg.role == "assistant":
+                converted.append(AIMessage(content=msg.content))
+            else:
+                converted.append(HumanMessage(content=msg.content))
+        else:
+            converted.append(HumanMessage(content=str(msg)))
+    return converted
+
+
 class DietGraph(BaseGraph):
     def __init__(self, llm):
         try:
             self.tools = {
-                "retrieve_context": retrieve_context,
                 "add_meal_to_calendar": add_meal_to_calendar,
                 "get_meals_for_day": get_meals_for_day,
                 "edit_meal": edit_meal,
@@ -44,9 +60,16 @@ class DietGraph(BaseGraph):
                 registration_answers = []
             if diet_plan is None:
                 diet_plan = {}
-            logger.debug(f"Invoking DietGraph with {len(history)} messages")
+            # Convert history to LangChain message format
+            langchain_history = convert_messages_to_langchain(history)
+            logger.debug(f"Invoking DietGraph with {len(langchain_history)} messages")
             result = self.graph.invoke(
-                {"messages": history, "daily_answers": daily_answers, "registration_answers": registration_answers, "diet_plan": diet_plan}
+                {
+                    "messages": langchain_history,
+                    "daily_answers": daily_answers,
+                    "registration_answers": registration_answers,
+                    "diet_plan": diet_plan,
+                }
             )
             ai_response = result["messages"][-1]
             logger.debug("DietGraph invocation successful")
@@ -62,7 +85,7 @@ class DietGraph(BaseGraph):
         context_msg = f"User's daily answers: {state['daily_answers']}. Registration info: {state['registration_answers']}. Current diet plan: {state['diet_plan']}."
         system_message = SystemMessage(
             content=context_msg
-            + " You are a diet planning assistant. Help the user plan their meals for the next days or specific days based on their health information and goals. Avoid any meals that the user does not like."
+            + " You are a diet planning assistant. Help the user plan their meals for the next days or specific days based on their health information and goals. Avoid any meals that the user does not like. Keep going until you planned all the days you need to plan"
         )
         messages_with_context = [system_message] + state["messages"]
 

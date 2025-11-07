@@ -22,7 +22,7 @@ def plan_diet(data: DietPlanDTO, user: User = Depends(get_current_user)):
 
     registration_answers = user.__dict__
     daily_answers_history = get_daily_answers(user.username)
-    latest_answers = daily_answers_history[-1]['answers'] if daily_answers_history else []
+    latest_answers = daily_answers_history[-1].answers if daily_answers_history else []
     recent_messages = get_recent_messages(user.username)
 
     diet_prompt = f"Plan a {days}-day diet based on the user's health information and preferences: {preferences or {}}"
