@@ -31,7 +31,8 @@ conn.execute("PRAGMA foreign_keys = ON")
 cursor = conn.cursor()
 
 # Create tables
-cursor.execute("""
+cursor.execute(
+    """
 CREATE TABLE IF NOT EXISTS users (
     username TEXT PRIMARY KEY,
     password TEXT NOT NULL,
@@ -47,9 +48,11 @@ CREATE TABLE IF NOT EXISTS users (
     epa_summary TEXT,
     recent_summary TEXT
 )
-""")
+"""
+)
 
-cursor.execute("""
+cursor.execute(
+    """
 CREATE TABLE IF NOT EXISTS events (
     id TEXT PRIMARY KEY,
     username TEXT NOT NULL,
@@ -58,18 +61,22 @@ CREATE TABLE IF NOT EXISTS events (
     to_timestamp TEXT NOT NULL,
     FOREIGN KEY (username) REFERENCES users (username)
 )
-""")
+"""
+)
 
-cursor.execute("""
+cursor.execute(
+    """
 CREATE TABLE IF NOT EXISTS conversations (
     id TEXT PRIMARY KEY,
     user_id TEXT NOT NULL,
     state TEXT,
     FOREIGN KEY (user_id) REFERENCES users (username)
 )
-""")
+"""
+)
 
-cursor.execute("""
+cursor.execute(
+    """
 CREATE TABLE IF NOT EXISTS messages (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     conversation_id TEXT NOT NULL,
@@ -78,15 +85,18 @@ CREATE TABLE IF NOT EXISTS messages (
     timestamp TEXT NOT NULL,
     FOREIGN KEY (conversation_id) REFERENCES conversations (id)
 )
-""")
+"""
+)
 
-cursor.execute("""
+cursor.execute(
+    """
 CREATE TABLE IF NOT EXISTS daily_answers (
     user_id TEXT PRIMARY KEY,
     answers TEXT NOT NULL,
     FOREIGN KEY (user_id) REFERENCES users (username)
 )
-""")
+"""
+)
 
 conn.commit()
 
@@ -112,6 +122,7 @@ class User(BaseModel):
     goal: Optional[str] = None
     epa_summary: Optional[str] = None
     recent_summary: Optional[str] = None
+    needs_daily_questions: bool = False
     events: List[Event] = []
 
 
@@ -193,7 +204,7 @@ def get_user(username: str):
     cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
     row = cursor.fetchone()
     if row:
-        return User(
+        user = User(
             username=row[0],
             password=row[1],
             first_name=row[2],
@@ -209,12 +220,15 @@ def get_user(username: str):
             recent_summary=row[12],
             events=get_user_events(username) or [],
         )
+
+        today = datetime.now().date().isoformat()
+        daily_answers = get_daily_answers(username)
+        user.needs_daily_questions = not any(entry["date"].startswith(today) for entry in daily_answers)
+        return user
     return None
 
 
-def add_event(
-    username: str, description: str, from_timestamp: datetime, to_timestamp: datetime
-):
+def add_event(username: str, description: str, from_timestamp: datetime, to_timestamp: datetime):
     user = get_user(username)
     if user is None:
         return None
@@ -242,9 +256,7 @@ def add_event(
 
 
 def remove_event(username: str, event_id: str):
-    cursor.execute(
-        "DELETE FROM events WHERE id = ? AND username = ?", (event_id, username)
-    )
+    cursor.execute("DELETE FROM events WHERE id = ? AND username = ?", (event_id, username))
     conn.commit()
     return cursor.rowcount > 0
 
@@ -292,9 +304,7 @@ def get_user_events(username: str):
     return events
 
 
-def get_user_events_between_timestamps(
-    username: str, from_timestamp: datetime, to_timestamp: datetime
-):
+def get_user_events_between_timestamps(username: str, from_timestamp: datetime, to_timestamp: datetime):
     cursor.execute(
         """
     SELECT id, description, from_timestamp, to_timestamp FROM events
@@ -351,9 +361,7 @@ def get_conversation(user_id: str, conversation_id: str) -> Optional[Conversatio
     return Conversation(id=conversation_id, messages=messages, state=state)
 
 
-def update_conversation(
-    user_id: str, conversation_id: str, messages: List[Message], state: Dict[str, Any]
-):
+def update_conversation(user_id: str, conversation_id: str, messages: List[Message], state: Dict[str, Any]):
     # Update state
     cursor.execute(
         "UPDATE conversations SET state = ? WHERE id = ? AND user_id = ?",
@@ -388,10 +396,7 @@ def get_user_conversations(user_id: str) -> Dict[str, Conversation]:
 
 def save_daily_answers(user_id: str, answers: List[Dict[str, Any]]):
     current_answers = get_daily_answers(user_id)
-    new_entry = {
-        "date": datetime.now().isoformat(),
-        "answers": answers
-    }
+    new_entry = {"date": datetime.now().isoformat(), "answers": answers}
     current_answers.append(new_entry)
     cursor.execute(
         "INSERT OR REPLACE INTO daily_answers (user_id, answers) VALUES (?, ?)",
@@ -405,11 +410,11 @@ def get_daily_answers(user_id: str) -> List[Dict[str, Any]]:
     row = cursor.fetchone()
     if row:
         loaded = json.loads(row[0])
-        if isinstance(loaded, list) and loaded and isinstance(loaded[0], dict) and 'date' in loaded[0]:
+        if isinstance(loaded, list) and loaded and isinstance(loaded[0], dict) and "date" in loaded[0]:
             return loaded
         else:
             # Old format, wrap it
-            return [{'date': None, 'answers': loaded}]
+            return [{"date": None, "answers": loaded}]
     return []
 
 
