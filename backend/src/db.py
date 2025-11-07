@@ -484,19 +484,17 @@ def save_daily_answers(username: str, answers: List[Answer]):
 def get_daily_answers(username: str) -> List[DailyAnswers]:
     cursor = conn.cursor()
     cursor.execute("SELECT date, answers FROM daily_answers WHERE username = ? ORDER BY date", (username,))
-    row = cursor.fetchone()
+    rows = cursor.fetchall()
 
-    if row is None:
+    if not rows:
         return []
-
-    parsed = json.loads(row[1])
-    answers = [Answer.model_validate(item) for item in parsed]
 
     return [
         DailyAnswers(
             date=row[0],
-            answers=answers,
+            answers=[Answer.model_validate(item) for item in json.loads(row[1])],
         )
+        for row in rows
     ]
 
 

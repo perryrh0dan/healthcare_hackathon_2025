@@ -26,6 +26,7 @@ class DailyQuestion(TypedDict):
     type: Literal["text", "number", "enum"]
     options: Optional[list[DailyQuestionOption]]
     optional: bool
+    field: Optional[Literal["mood"]]
 
 
 @router.get("/")
@@ -50,19 +51,10 @@ def get_daily_questions(user: User = Depends(get_current_user)):
                 DailyQuestionOption(value="bad", label="Bad"),
             ],
             optional=False,
+            field="mood",
         ),
-        DailyQuestion(
-            question="What is your blood pressure?",
-            type="text",
-            options=None,
-            optional=False,
-        ),
-        DailyQuestion(
-            question="What is your weight?",
-            type="number",
-            options=None,
-            optional=False,
-        ),
+        DailyQuestion(question="What is your blood pressure?", type="text", options=None, optional=False, field=None),
+        DailyQuestion(question="What is your weight?", type="number", options=None, optional=False, field=None),
         DailyQuestion(
             question="Did you take any medication today?",
             type="enum",
@@ -71,6 +63,7 @@ def get_daily_questions(user: User = Depends(get_current_user)):
                 DailyQuestionOption(value="no", label="No"),
             ],
             optional=False,
+            field=None,
         ),
     ]
 
@@ -96,9 +89,7 @@ def submit_daily_answers(data: List[AnswerDTO], user: User = Depends(get_current
             detail="Daily questionnaire already submitted today",
         )
 
-    answers = [
-        Answer(question=answer["question"], answer=answer["answer"]) for answer in data
-    ]
+    answers = [Answer(question=answer["question"], answer=answer["answer"]) for answer in data]
 
     save_daily_answers(user.username, answers)
     logger.info(f"Received daily answers for user {user.username}: {answers}")

@@ -1,18 +1,19 @@
 from abc import ABC
-from typing import Optional, TypedDict, List, Dict, Literal
+from os import wait
+from typing import Any, Optional, TypedDict, List, Dict, Literal
 from langgraph.graph import StateGraph, END, START
 from langchain_core.messages import SystemMessage
 from pydantic import BaseModel, Field
 from ..config import logger
 import json
 from ..utils import calculate_streak, get_next_appointment
-from ..db import get_daily_answers
+from ..db import Event, get_daily_answers
 
 
 class Widget(BaseModel):
     title: str
-    type: Literal["text"] | Literal["streak"] | Literal["event"] = "text"
-    body: str = Field(..., max_length=30)
+    type: Literal["text"] | Literal["streak"] | Literal["event"] | Literal["graph"] = "text"
+    body: str | Any = Field(..., max_length=30)
     timestamp: Optional[str] = None
 
 
@@ -42,12 +43,13 @@ class DashboardGraph(ABC):
 
     def run(self, user_data: Dict) -> List[Widget]:
         try:
-            logger.debug(
-                f"Invoking DashboardGraph with user data for {user_data.get('username', 'unknown')}"
-            )
+            logger.debug(f"Invoking DashboardGraph with user data for {user_data.get('username', 'unknown')}")
+            # Serialize events to dicts for JSON compatibility
+            user_data_copy = user_data.copy()
+            user_data_copy["events"] = [event.model_dump(mode="json") for event in user_data["events"]]
             result = self.graph.invoke(
                 {
-                    "user_data": user_data,
+                    "user_data": user_data_copy,
                     "widgets": [],
                 }
             )
@@ -65,10 +67,23 @@ class DashboardGraph(ABC):
         daily_answers = get_daily_answers(username) if username else []
         streak = calculate_streak(daily_answers)
 
-        events = user_data.get("events", [])
+        events = [Event.model_validate(event) for event in user_data.get("events", [])]
         next_appt = get_next_appointment(events)
 
+        feelings = [
+            {"timestamp": daily.date, "value": elem.answer} for daily in daily_answers for elem in daily.answers if elem.question == "mood"
+        ]
+
         default_widgets = [
+            Widget(
+                title="Mood",
+                type="graph",
+                body={
+                    "xAxis": "Time",
+                    "yAxis": "Value",
+                    "data": [{"x": feeling["timestamp"], "y": feeling["value"]} for feeling in feelings],
+                },
+            ),
             Widget(title="Daily Streak", type="streak", body=f"{streak}"),
             Widget(
                 title="Next Appointment",
