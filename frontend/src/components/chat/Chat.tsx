@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Message from '@/components/ui/message';
@@ -25,6 +26,32 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const conversationId = Cookies.get('conversation_id');
+
+  const { data: conversationData } = useQuery({
+    queryKey: ['conversation', conversationId],
+    queryFn: async () => {
+      if (!conversationId) return null;
+      const response = await fetch(`/api/conversations/${conversationId}`);
+      if (!response.ok) throw new Error('Failed to load conversation');
+      return response.json();
+    },
+    enabled: !!conversationId,
+  });
+
+  useEffect(() => {
+    if (conversationData?.messages) {
+      setMessages(
+        conversationData.messages.map(
+          (item: { role: string; content: string }) => ({
+            text: item.content,
+            sender: item.role === 'assistant' ? 'bot' : 'user',
+          })
+        )
+      );
+    }
+  }, [conversationData]);
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
@@ -37,8 +64,10 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
       formData.append('message', message);
 
       if (conversationId) formData.append('conversation_id', conversationId);
-      if (selectedFile) formData.append('file', selectedFile);
+      if (selectedFile) formData.append('image', selectedFile);
 
+    console.log(formData)
+    console.log(selectedFile)
       const response = await fetch('/api/chat', {
         method: 'POST',
         body: formData,
@@ -67,7 +96,7 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
       setMessages((prev) => [...prev, { text: input, sender: 'user' }]);
       sendMessageMutation.mutate(input);
       setInput('');
-      setSelectedFile(null);
+      setSelectedFile(selectedFile);
     }
   };
 
@@ -123,7 +152,12 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
               />
               <span className="text-sm text-gray-600">{selectedFile.name}</span>
               <Button
-                onClick={() => setSelectedFile(null)}
+                onClick={() => {
+                  setSelectedFile(null);
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = '';
+                  }
+                }}
                 variant="ghost"
                 size="sm"
                 className="text-red-500"
