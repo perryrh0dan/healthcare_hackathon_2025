@@ -106,6 +106,30 @@ CREATE TABLE IF NOT EXISTS daily_answers (
 """
 )
 
+cursor.execute(
+    """
+CREATE TABLE IF NOT EXISTS daily_questions (
+    user_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    questions TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users (username),
+    PRIMARY KEY (user_id, date)
+)
+"""
+)
+
+cursor.execute(
+    """
+CREATE TABLE IF NOT EXISTS daily_dashboard_widgets (
+    user_id TEXT NOT NULL,
+    date TEXT NOT NULL,
+    widgets TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users (username),
+    PRIMARY KEY (user_id, date)
+)
+"""
+)
+
 conn.commit()
 
 # Add recent_summary column if not exists
@@ -458,6 +482,48 @@ def get_daily_answers(user_id: str) -> List[Dict[str, Any]]:
     return []
 
 
+def save_daily_questions(user_id: str, questions: List[Dict[str, Any]]):
+    today = datetime.now().date().isoformat()
+    cursor.execute(
+        "INSERT OR REPLACE INTO daily_questions (user_id, date, questions) VALUES (?, ?, ?)",
+        (user_id, today, json.dumps(questions)),
+    )
+    conn.commit()
+
+
+def get_daily_questions(user_id: str) -> Optional[List[Dict[str, Any]]]:
+    today = datetime.now().date().isoformat()
+    cursor.execute(
+        "SELECT questions FROM daily_questions WHERE user_id = ? AND date = ?",
+        (user_id, today),
+    )
+    row = cursor.fetchone()
+    if row:
+        return json.loads(row[0])
+    return None
+
+
+def save_daily_dashboard_widgets(user_id: str, widgets: List[Dict[str, Any]]):
+    today = datetime.now().date().isoformat()
+    cursor.execute(
+        "INSERT OR REPLACE INTO daily_dashboard_widgets (user_id, date, widgets) VALUES (?, ?, ?)",
+        (user_id, today, json.dumps(widgets)),
+    )
+    conn.commit()
+
+
+def get_daily_dashboard_widgets(user_id: str) -> Optional[List[Dict[str, Any]]]:
+    today = datetime.now().date().isoformat()
+    cursor.execute(
+        "SELECT widgets FROM daily_dashboard_widgets WHERE user_id = ? AND date = ?",
+        (user_id, today),
+    )
+    row = cursor.fetchone()
+    if row:
+        return json.loads(row[0])
+    return None
+
+
 def update_recent_summary(username: str, summary: str):
     cursor.execute(
         "UPDATE users SET recent_summary = ? WHERE username = ?",
@@ -472,3 +538,80 @@ def get_recent_summary(username: str) -> Optional[str]:
     if row:
         return row[0]
     return None
+
+
+def get_all_users() -> List[str]:
+    cursor.execute("SELECT username FROM users")
+    rows = cursor.fetchall()
+    return [row[0] for row in rows]
+
+
+def generate_daily_questions_for_all_users():
+    from .utils import get_recent_messages
+    from .state import questions_graph
+
+    users = get_all_users()
+    for username in users:
+        user = get_user(username)
+        if user is None:
+            continue
+
+        base_questions = [
+            {
+                "question": "How are you?",
+                "type": "enum",
+                "options": [
+                    {"value": "verygood", "label": "Very good"},
+                    {"value": "good", "label": "Good"},
+                    {"value": "okay", "label": "Okay"},
+                    {"value": "notgood", "label": "Not good"},
+                    {"value": "bad", "label": "Bad"},
+                ],
+                "optional": False,
+            },
+            {
+                "question": "What is your blood pressure?",
+                "type": "text",
+                "options": None,
+                "optional": False,
+            },
+            {
+                "question": "What is your weight?",
+                "type": "number",
+                "options": None,
+                "optional": False,
+            },
+            {
+                "question": "Did you take any medication today?",
+                "type": "enum",
+                "options": [
+                    {"value": "yes", "label": "Yes"},
+                    {"value": "no", "label": "No"},
+                ],
+                "optional": False,
+            },
+        ]
+
+        recent_messages = get_recent_messages(username)
+        additional_questions = questions_graph.chat(recent_messages, base_questions, user)
+        additional_questions = additional_questions[:2]
+        all_questions = base_questions + additional_questions
+
+        save_daily_questions(username, all_questions)
+
+
+def generate_daily_dashboard_for_all_users():
+    from .clients.llm import LLM
+    from .graphs.dashboardgraph import DashboardGraph
+
+    users = get_all_users()
+    llm = LLM()
+    graph = DashboardGraph(llm.llm)
+
+    for username in users:
+        user = get_user(username)
+        if user is None:
+            continue
+
+        widgets = graph.run(user.__dict__)
+        save_daily_dashboard_widgets(username, [widget.__dict__ for widget in widgets])

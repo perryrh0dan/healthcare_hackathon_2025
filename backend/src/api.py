@@ -7,6 +7,9 @@ from uuid import uuid4
 from datetime import datetime
 import base64
 import os
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
+from apscheduler.triggers.cron import CronTrigger
 from .state import graph, summarization_graph
 from .routes import documents, user, calendar, daily, diet, dashboard, conversations
 from .db import (
@@ -16,11 +19,34 @@ from .db import (
     get_user,
     Message,
     Conversation,
+    generate_daily_questions_for_all_users,
+    generate_daily_dashboard_for_all_users,
 )
 from langchain_core.messages import HumanMessage, AIMessage
 from .config import logger
 
-app = FastAPI(root_path="/api")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(
+        generate_daily_questions_for_all_users,
+        CronTrigger(hour=0, minute=0),  # Run at midnight
+        id="generate_daily_questions",
+        name="Generate daily questions for all users",
+    )
+    scheduler.add_job(
+        generate_daily_dashboard_for_all_users,
+        CronTrigger(hour=0, minute=0),  # Run at midnight
+        id="generate_daily_dashboard",
+        name="Generate daily dashboard for all users",
+    )
+    scheduler.start()
+    yield
+    # Shutdown
+    scheduler.shutdown()
+
+app = FastAPI(root_path="/api", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

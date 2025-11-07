@@ -1,10 +1,10 @@
 from http import HTTPStatus
 from typing import List, Literal, Optional, TypedDict
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Depends
 
-from src.db import Answer, get_user, save_daily_answers
+from src.db import Answer, save_daily_answers, get_daily_questions as get_stored_daily_questions, User
 from ..state import questions_graph
-from ..utils import get_recent_messages
+from ..utils import get_recent_messages, get_current_user
 from ..config import logger
 
 router = APIRouter(prefix="/daily", tags=["daily"])
@@ -23,16 +23,15 @@ class DailyQuestion(TypedDict):
 
 
 @router.get("/")
-def get_daily_questions(request: Request):
-    username = request.cookies.get("user")
-    if username is None:
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
+def get_daily_questions(user: User = Depends(get_current_user)):
+    logger.info(f"Daily questions requested for user: {user.username}")
 
-    user = get_user(username)
-    if user is None:
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
+    # Try to get pre-generated questions first
+    pre_generated = get_stored_daily_questions(user.username)
+    if pre_generated:
+        return pre_generated
 
-    logger.info(f"Daily questions requested for user: {username}")
+    # Fallback: generate on-the-fly
     base_questions = [
         DailyQuestion(
             question="How are you?",
@@ -69,7 +68,7 @@ def get_daily_questions(request: Request):
         ),
     ]
 
-    recent_messages = get_recent_messages(username)
+    recent_messages = get_recent_messages(user.username)
 
     additional_questions = questions_graph.chat(recent_messages, base_questions, user)
     additional_questions = additional_questions[:2]
@@ -82,15 +81,7 @@ class AnswerDTO(TypedDict):
 
 
 @router.post("/")
-def submit_daily_answers(data: List[AnswerDTO], request: Request):
-    username = request.cookies.get("user")
-    if username is None:
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
-
-    user = get_user(username)
-    if user is None:
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
-
+def submit_daily_answers(data: List[AnswerDTO], user: User = Depends(get_current_user)):
     if not user.needs_daily_questions:
         raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Daily questionnaire already submitted today")
 
@@ -98,6 +89,6 @@ def submit_daily_answers(data: List[AnswerDTO], request: Request):
         Answer(question=answer["question"], answer=answer["answer"]) for answer in data
     ]
 
-    save_daily_answers(username, answers)
-    logger.info(f"Received daily answers for user {username}: {answers}")
+    save_daily_answers(user.username, answers)
+    logger.info(f"Received daily answers for user {user.username}: {answers}")
     return {"status": "success"}

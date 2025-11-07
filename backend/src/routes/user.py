@@ -1,6 +1,7 @@
 from typing import Literal, Optional, TypedDict
 from fastapi import (
     APIRouter,
+    Depends,
     File,
     Form,
     HTTPException,
@@ -15,6 +16,7 @@ from ..config import logger
 from http import HTTPStatus
 
 from src.db import UpdateUser, User, create_user, get_user, update_user
+from ..utils import get_current_user
 
 
 class RegisterUserDTO(TypedDict):
@@ -42,13 +44,9 @@ router = APIRouter(prefix="/users", tags=["users"])
 
 
 @router.get("/me")
-async def me(request: Request):
+async def me(user: User = Depends(get_current_user)):
     logger.debug("me")
-    username = request.cookies.get("user")
-    if username is None:
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
-
-    return get_user(username)
+    return user
 
 
 @router.post("/register")
@@ -64,7 +62,7 @@ async def register(data: RegisterUserDTO):
 
 @router.post("/setup")
 async def setup(
-    request: Request,
+    user: User = Depends(get_current_user),
     first_name: str = Form(...),
     last_name: str = Form(...),
     age: int = Form(...),
@@ -77,10 +75,6 @@ async def setup(
 ):
     logger.info("/setup")
 
-    username = request.cookies.get("user")
-    if username is None:
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
-
     llm = LLM()
     graph = EPAGraph(llm.llm)
 
@@ -91,7 +85,7 @@ async def setup(
 
     update_user(
         UpdateUser(
-            username=username,
+            username=user.username,
             first_name=first_name,
             last_name=last_name,
             age=age,
@@ -142,13 +136,7 @@ class SetupQuestion(TypedDict):
 
 
 @router.get("/setup")
-def get_registration_questions(request: Request):
-    username = request.cookies.get("user")
-    if username is None:
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
-
-    user = get_user(username)
-
+def get_registration_questions(user: User = Depends(get_current_user)):
     return [
         SetupQuestion(
             question="What is your first name?",
@@ -169,14 +157,14 @@ def get_registration_questions(request: Request):
             type="number",
             field="age",
             options=None,
-            value=user.age if user else None,
+            value=str(user.age) if user and user.age else None,
         ),
         SetupQuestion(
             question="What is your height?",
             type="number",
             field="height",
             options=None,
-            value=user.height if user else None,
+            value=str(user.height) if user and user.height else None,
         ),
         SetupQuestion(
             question="What is your gender?",

@@ -5,9 +5,11 @@ from langchain_community.document_loaders import PyPDFLoader
 import os
 from .config import logger
 from datetime import datetime, timedelta
-from .db import get_user_conversations
+from .db import get_user_conversations, get_user, User
 from typing import List, Dict, Optional
 from .db import Event
+from fastapi import HTTPException, Request
+from http import HTTPStatus
 
 embeddings = Embeddings()
 
@@ -89,4 +91,17 @@ def get_next_appointment(events: List[Event]) -> Optional[Event]:
     now = datetime.now()
     future_events = [e for e in events if e.from_timestamp > now]
     return min(future_events, key=lambda e: e.from_timestamp) if future_events else None
+
+
+def get_current_user(request: Request) -> User:
+    """Dependency to extract and validate current user from cookie."""
+    username = request.cookies.get("user")
+    if username is None:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Not authenticated")
+
+    user = get_user(username)
+    if user is None:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not found")
+
+    return user
 

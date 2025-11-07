@@ -1,5 +1,7 @@
-from fastapi import APIRouter, File, UploadFile
+from fastapi import APIRouter, File, UploadFile, Depends
 from ..config import logger
+from ..utils import get_current_user
+from ..db import User
 
 from ..clients.llm import LLM
 
@@ -7,8 +9,8 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 
 @router.post("/epa/")
-async def get_daily_questions(file: UploadFile = File(...)):
-    logger.debug("Received ePA")
+async def get_daily_questions(file: UploadFile = File(...), user: User = Depends(get_current_user)):
+    logger.debug(f"Received ePA for user: {user.username}")
     filename = file.filename
 
     contents = await file.read()
