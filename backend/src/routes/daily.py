@@ -2,7 +2,7 @@ from http import HTTPStatus
 from typing import List, Literal, Optional, TypedDict
 from fastapi import APIRouter, HTTPException, Depends
 
-from src.db import Answer, save_daily_answers, get_daily_questions as get_stored_daily_questions, User
+from src.db import Answer, save_daily_answers, get_daily_questions as get_stored_daily_questions, save_daily_questions, User
 from ..state import questions_graph
 from ..utils import get_recent_messages, get_current_user
 from ..config import logger
@@ -72,7 +72,9 @@ def get_daily_questions(user: User = Depends(get_current_user)):
 
     additional_questions = questions_graph.chat(recent_messages, base_questions, user)
     additional_questions = additional_questions[:2]
-    return base_questions + additional_questions
+    all_questions = base_questions + additional_questions
+    save_daily_questions(user.username, all_questions)
+    return all_questions
 
 
 class AnswerDTO(TypedDict):

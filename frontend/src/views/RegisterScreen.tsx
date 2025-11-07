@@ -1,9 +1,10 @@
-import { Input } from '@/components/ui/input';
-import { Button } from '../components/ui/button';
-import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
-import { useAuth } from '@/contexts';
-import { useEffect } from 'react';
+ import { Input } from '@/components/ui/input';
+ import { Button } from '../components/ui/button';
+ import { useMutation } from '@tanstack/react-query';
+ import { useNavigate } from '@tanstack/react-router';
+ import { useAuth } from '@/contexts';
+ import { useEffect } from 'react';
+ import confetti from 'canvas-confetti';
 
 const RegisterScreen = () => {
   const { isAuthenticated } = useAuth();
@@ -27,9 +28,10 @@ const RegisterScreen = () => {
         throw new Error('Failed to fetch daily questions');
       }
     },
-    onSuccess: () => {
-      navigate({ to: '/login' });
-    },
+     onSuccess: () => {
+       confetti();
+       navigate({ to: '/login' });
+     },
   });
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
