@@ -3,7 +3,7 @@ import json
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, END, START
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
-from .config import logger
+from ..config import logger
 from typing import Dict
 
 
@@ -31,7 +31,10 @@ class AgentState(TypedDict):
     base_questions: list[Any]
 
 
-class QuestionsGraph:
+from .graph import BaseGraph
+
+
+class QuestionsGraph(BaseGraph):
     def __init__(self, llm):
         try:
             self.llm = llm

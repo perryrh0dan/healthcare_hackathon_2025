@@ -6,8 +6,8 @@ from datetime import datetime, timedelta
 
 from .routes import documents, user, calendar
 from .clients.llm import LLM
-from .graph import Graph
-from .questionsgraph import QuestionsGraph
+from .graphs.chatgraph import ChatGraph
+from .graphs.questionsgraph import QuestionsGraph
 from langchain_core.messages import HumanMessage, AIMessage
 from .config import logger
 
@@ -78,7 +78,7 @@ def get_recent_messages(user_id: str):
 
 try:
     llm = LLM()
-    graph = Graph(llm.llm)
+    graph = ChatGraph(llm.llm)
     questions_graph = QuestionsGraph(llm.llm)
     logger.info("API components initialized")
 except Exception as e:

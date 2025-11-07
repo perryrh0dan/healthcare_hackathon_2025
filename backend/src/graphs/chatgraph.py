@@ -1,8 +1,8 @@
 from typing import TypedDict, List, Dict, Any
 from langgraph.graph import StateGraph, END, START
 from langchain_core.messages import BaseMessage, ToolMessage, SystemMessage
-from .tools import retrieve_context, get_calendar, add_calendar_event, remove_calendar_event, edit_calendar_event
-from .config import logger
+from ..tools import retrieve_context, get_calendar, add_calendar_event, remove_calendar_event, edit_calendar_event
+from ..config import logger
 
 
 class AgentState(TypedDict):
@@ -11,7 +11,10 @@ class AgentState(TypedDict):
     registration_answers: List[Dict[str, str]]
 
 
-class Graph:
+from .graph import BaseGraph
+
+
+class ChatGraph(BaseGraph):
     def __init__(self, llm):
         try:
             self.tools = {
