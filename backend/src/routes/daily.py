@@ -87,6 +87,13 @@ def submit_daily_answers(data: List[AnswerDTO], request: Request):
     if username is None:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
 
+    user = get_user(username)
+    if user is None:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
+
+    if not user.needs_daily_questions:
+        raise HTTPException(status_code=HTTPStatus.BAD_REQUEST, detail="Daily questionnaire already submitted today")
+
     answers = [
         Answer(question=answer["question"], answer=answer["answer"]) for answer in data
     ]
