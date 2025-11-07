@@ -32,11 +32,11 @@ const Home = () => {
           <h3 className="mb-2 text-lg font-semibold">Food Calendar</h3>
           <p>Coming soon</p>
         </div>
-        <div className="rounded-lg bg-teal-100 p-4 shadow-lg">
-          <Link to="/daily">
-            <h3 className="mb-2 text-lg font-semibold">Daily Questions</h3>
-          </Link>
-        </div>
+        <Link  className="rounded-lg bg-teal-100 p-4 shadow-lg" to="/daily">
+          <div>
+              <h3 className="mb-2 text-lg font-semibold">Daily Questions</h3>
+          </div>
+        </Link>
         <div className="rounded-lg bg-blue-50 p-4 shadow-lg">
           <h3 className="mb-2 text-lg font-semibold">Recent Activity</h3>
           <p>Logged in today</p>

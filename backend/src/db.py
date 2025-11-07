@@ -26,6 +26,11 @@ class Conversation(BaseModel):
     state: Dict[str, Any] = {}
 
 
+class Answer(BaseModel):
+    question: str
+    answer: str
+
+
 # Database setup
 conn = sqlite3.connect("healthcare.db", check_same_thread=False)
 conn.execute("PRAGMA foreign_keys = ON")
@@ -232,12 +237,16 @@ def get_user(username: str):
 
         today = datetime.now().date().isoformat()
         daily_answers = get_daily_answers(username)
-        user.needs_daily_questions = not any(entry["date"].startswith(today) for entry in daily_answers)
+        user.needs_daily_questions = not any(
+            entry["date"].startswith(today) for entry in daily_answers
+        )
         return user
     return None
 
 
-def add_event(username: str, description: str, from_timestamp: datetime, to_timestamp: datetime):
+def add_event(
+    username: str, description: str, from_timestamp: datetime, to_timestamp: datetime
+):
     user = get_user(username)
     if user is None:
         return None
@@ -265,7 +274,9 @@ def add_event(username: str, description: str, from_timestamp: datetime, to_time
 
 
 def remove_event(username: str, event_id: str):
-    cursor.execute("DELETE FROM events WHERE id = ? AND username = ?", (event_id, username))
+    cursor.execute(
+        "DELETE FROM events WHERE id = ? AND username = ?", (event_id, username)
+    )
     conn.commit()
     return cursor.rowcount > 0
 
@@ -313,7 +324,9 @@ def get_user_events(username: str):
     return events
 
 
-def get_user_events_between_timestamps(username: str, from_timestamp: datetime, to_timestamp: datetime):
+def get_user_events_between_timestamps(
+    username: str, from_timestamp: datetime, to_timestamp: datetime
+):
     cursor.execute(
         """
     SELECT id, description, from_timestamp, to_timestamp FROM events
@@ -371,7 +384,9 @@ def get_conversation(user_id: str, conversation_id: str) -> Optional[Conversatio
     return Conversation(id=conversation_id, messages=messages, state=state)
 
 
-def update_conversation(user_id: str, conversation_id: str, messages: List[Message], state: Dict[str, Any]):
+def update_conversation(
+    user_id: str, conversation_id: str, messages: List[Message], state: Dict[str, Any]
+):
     # Update state
     cursor.execute(
         "UPDATE conversations SET state = ? WHERE id = ? AND user_id = ?",
@@ -405,7 +420,7 @@ def get_user_conversations(user_id: str) -> Dict[str, Conversation]:
     return conversations
 
 
-def save_daily_answers(user_id: str, answers: List[Dict[str, Any]]):
+def save_daily_answers(user_id: str, answers: List[Answer]):
     current_answers = get_daily_answers(user_id)
     new_entry = {"date": datetime.now().isoformat(), "answers": answers}
     current_answers.append(new_entry)
@@ -421,7 +436,12 @@ def get_daily_answers(user_id: str) -> List[Dict[str, Any]]:
     row = cursor.fetchone()
     if row:
         loaded = json.loads(row[0])
-        if isinstance(loaded, list) and loaded and isinstance(loaded[0], dict) and "date" in loaded[0]:
+        if (
+            isinstance(loaded, list)
+            and loaded
+            and isinstance(loaded[0], dict)
+            and "date" in loaded[0]
+        ):
             return loaded
         else:
             # Old format, wrap it
