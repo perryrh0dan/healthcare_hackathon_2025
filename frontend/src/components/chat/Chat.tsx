@@ -32,7 +32,7 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
     queryKey: ['conversation', conversationId],
     queryFn: async () => {
       if (!conversationId) return null;
-      const response = await fetch(`/api/conversations/${conversationId}`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/conversations/${conversationId}`);
       if (!response.ok) throw new Error('Failed to load conversation');
       return response.json();
     },

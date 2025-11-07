@@ -9,3 +9,6 @@ __pycache__/
 *$py.class
 
 .log
+
+backend/uploads/
+!backend/uploads/.gitkeep

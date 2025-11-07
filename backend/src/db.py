@@ -32,6 +32,11 @@ class Answer(BaseModel):
     answer: str
 
 
+class DailyAnswers(BaseModel):
+    date: str
+    answers: List[Answer]
+
+
 # Database setup
 conn = sqlite3.connect("healthcare.db", check_same_thread=False)
 conn.execute("PRAGMA foreign_keys = ON")
@@ -272,7 +277,7 @@ def get_user(username: str):
         today = datetime.now().date().isoformat()
         daily_answers = get_daily_answers(username)
         user.needs_daily_questions = not any(
-            entry["date"].startswith(today) for entry in daily_answers
+            entry.date.startswith(today) for entry in daily_answers
         )
         return user
     return None
@@ -468,22 +473,21 @@ def save_daily_answers(username: str, answers: List[Answer]):
     conn.commit()
 
 
-def get_daily_answers(username: str) -> List[Dict[str, Any]]:
-    cursor.execute("SELECT answers FROM daily_answers WHERE username = ?", (username,))
+def get_daily_answers(username: str) -> List[DailyAnswers]:
+    cursor.execute(
+        "SELECT date, answers FROM daily_answers WHERE username = ?", (username,)
+    )
     row = cursor.fetchone()
-    if row:
-        loaded = json.loads(row[0])
-        if (
-            isinstance(loaded, list)
-            and loaded
-            and isinstance(loaded[0], dict)
-            and "date" in loaded[0]
-        ):
-            return loaded
-        else:
-            # Old format, wrap it
-            return [{"date": None, "answers": loaded}]
-    return []
+
+    if row is None:
+        return []
+
+    return [
+        DailyAnswers(
+            date=row(0),
+            answers=row(1),
+        )
+    ]
 
 
 def save_daily_questions(username: str, questions: List[Dict[str, Any]]):
