@@ -1,7 +1,7 @@
 from typing import TypedDict
 from fastapi import APIRouter, HTTPException, Request, Response, status
 from fastapi.exceptions import FastAPIError
-from loguru import logger
+from ..config import logger
 from http import HTTPStatus
 
 from src.db import User, create_user, get_user

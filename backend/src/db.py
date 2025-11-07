@@ -75,3 +75,11 @@ def get_user_events(username: str):
     if user is None:
         return None
     return user.events
+
+
+def get_user_events_between_timestamps(username: str, from_timestamp: datetime, to_timestamp: datetime):
+    user = get_user(username)
+    if user is None:
+        return None
+    filtered_events = [e for e in user.events if e.from_timestamp < to_timestamp and e.to_timestamp > from_timestamp]
+    return filtered_events

@@ -1,11 +1,16 @@
 from typing import TypedDict
 from fastapi import APIRouter, HTTPException
-from loguru import logger
+from ..config import logger
 from http import HTTPStatus
 from datetime import datetime
-import uuid
-
-from src.db import Event, get_user
+from src.db import (
+    Event,
+    get_user_events,
+    add_event as db_add_event,
+    remove_event as db_remove_event,
+    edit_event as db_edit_event,
+    get_user_events_between_timestamps,
+)
 
 
 class CalendarDTO(TypedDict):
@@ -39,28 +44,39 @@ router = APIRouter(prefix="/calendar", tags=["calendar"])
 @router.get("/")
 async def get_calendar(username: str):
     logger.debug(f"Getting calendar for user: {username}")
-    user = get_user(username)
-    if user is None:
+    events = get_user_events(username)
+
+    if events is None:
         logger.warning(f"User not found: {username}")
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found")
-    logger.info(f"Retrieved {len(user.events)} events for user: {username}")
-    return CalendarDTO(username=username, events=user.events)
+    logger.info(f"Retrieved {len(events)} events for user: {username}")
+    return CalendarDTO(username=username, events=events)
+
+
+@router.get("/events")
+async def get_events_between_timestamps(username: str, from_timestamp: str, to_timestamp: str):
+    logger.debug(f"Getting events between {from_timestamp} and {to_timestamp} for user: {username}")
+    start = datetime.fromisoformat(from_timestamp)
+    end = datetime.fromisoformat(to_timestamp)
+    filtered_events = get_user_events_between_timestamps(username, start, end)
+
+    if filtered_events is None:
+        logger.warning(f"User not found: {username}")
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found")
+    logger.info(f"Retrieved {len(filtered_events)} events between timestamps for user: {username}")
+    return CalendarDTO(username=username, events=filtered_events)
 
 
 @router.post("/add")
 async def add_event(data: AddEventDTO):
     logger.debug(f"Adding event for user: {data['username']}")
-    user = get_user(data["username"])
-    if user is None:
+    from_ts = datetime.fromisoformat(data["from_timestamp"])
+    to_ts = datetime.fromisoformat(data["to_timestamp"])
+    event = db_add_event(data["username"], data["description"], from_ts, to_ts)
+
+    if event is None:
         logger.warning(f"User not found: {data['username']}")
         raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found")
-    event = Event(
-        id=str(uuid.uuid4()),
-        description=data["description"],
-        from_timestamp=datetime.fromisoformat(data["from_timestamp"]),
-        to_timestamp=datetime.fromisoformat(data["to_timestamp"]),
-    )
-    user.events.append(event)
     logger.info(f"Added event {event.id} for user: {data['username']}")
     return {"message": "Event added", "event_id": event.id}
 
@@ -68,32 +84,24 @@ async def add_event(data: AddEventDTO):
 @router.post("/remove")
 async def remove_event(data: RemoveEventDTO):
     logger.debug(f"Removing event {data['event_id']} for user: {data['username']}")
-    user = get_user(data["username"])
-    if user is None:
-        logger.warning(f"User not found: {data['username']}")
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found")
-    original_count = len(user.events)
-    user.events = [e for e in user.events if e.id != data["event_id"]]
-    if len(user.events) < original_count:
-        logger.info(f"Removed event {data['event_id']} for user: {data['username']}")
-    else:
-        logger.warning(f"Event {data['event_id']} not found for user: {data['username']}")
+    success = db_remove_event(data["username"], data["event_id"])
+
+    if not success:
+        logger.warning(f"User or event not found: user {data['username']}, event {data['event_id']}")
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User or event not found")
+    logger.info(f"Removed event {data['event_id']} for user: {data['username']}")
     return {"message": "Event removed"}
 
 
 @router.post("/edit")
 async def edit_event(data: EditEventDTO):
     logger.debug(f"Editing event {data['event_id']} for user: {data['username']}")
-    user = get_user(data["username"])
-    if user is None:
-        logger.warning(f"User not found: {data['username']}")
-        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User not found")
-    for event in user.events:
-        if event.id == data["event_id"]:
-            event.description = data["description"]
-            event.from_timestamp = datetime.fromisoformat(data["from_timestamp"])
-            event.to_timestamp = datetime.fromisoformat(data["to_timestamp"])
-            logger.info(f"Updated event {data['event_id']} for user: {data['username']}")
-            return {"message": "Event updated"}
-    logger.warning(f"Event {data['event_id']} not found for user: {data['username']}")
-    raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="Event not found")
+    from_ts = datetime.fromisoformat(data["from_timestamp"])
+    to_ts = datetime.fromisoformat(data["to_timestamp"])
+    success = db_edit_event(data["username"], data["event_id"], data["description"], from_ts, to_ts)
+
+    if not success:
+        logger.warning(f"User or event not found: user {data['username']}, event {data['event_id']}")
+        raise HTTPException(status_code=HTTPStatus.NOT_FOUND, detail="User or event not found")
+    logger.info(f"Updated event {data['event_id']} for user: {data['username']}")
+    return {"message": "Event updated"}

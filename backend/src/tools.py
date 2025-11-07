@@ -2,7 +2,7 @@ from langchain.tools import tool
 import json
 from datetime import datetime
 from .config import logger
-from .db import add_event, remove_event, edit_event, get_user_events
+from .db import add_event, remove_event, edit_event, get_user_events, get_user_events_between_timestamps
 from .utils import vector_store
 
 
@@ -104,3 +104,34 @@ def edit_calendar_event(username: str, event_id: str, description: str, from_tim
     except Exception as e:
         logger.error(f"Error editing event {event_id} for user {username}: {e}")
         return f"Error editing event: {str(e)}"
+
+
+@tool()
+def get_calendar_events_between_timestamps(username: str, from_timestamp: str, to_timestamp: str):
+    """Get events from a user's calendar that overlap with the given timestamp range. Timestamps should be in ISO format."""
+    logger.debug(f"Getting events between {from_timestamp} and {to_timestamp} for user: {username}")
+    try:
+        from_dt = datetime.fromisoformat(from_timestamp)
+        to_dt = datetime.fromisoformat(to_timestamp)
+        events = get_user_events_between_timestamps(username, from_dt, to_dt)
+        if events is None:
+            logger.warning(f"User not found: {username}")
+            return f"User {username} not found"
+        if not events:
+            return f"No events found for user {username} in the given timestamp range"
+        event_list = []
+        for event in events:
+            event_list.append({
+                "id": event.id,
+                "description": event.description,
+                "from_timestamp": event.from_timestamp.isoformat(),
+                "to_timestamp": event.to_timestamp.isoformat()
+            })
+        logger.info(f"Retrieved {len(events)} events between timestamps for user: {username}")
+        return json.dumps({"username": username, "events": event_list})
+    except ValueError as e:
+        logger.error(f"Invalid timestamp format: {e}")
+        return f"Invalid timestamp format. Use ISO format like '2025-11-07T10:00:00'"
+    except Exception as e:
+        logger.error(f"Error getting events between timestamps for user {username}: {e}")
+        return f"Error retrieving events: {str(e)}"

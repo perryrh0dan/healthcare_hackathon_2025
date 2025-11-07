@@ -1,5 +1,5 @@
 from fastapi import APIRouter, File, UploadFile
-from loguru import logger
+from ..config import logger
 
 from ..clients.llm import LLM
 
