@@ -32,26 +32,16 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
   const sendMessageMutation = useAuthedMutation({
     mutationFn: async (message: string) => {
       const conversationId = Cookies.get('conversation_id');
-      let body: FormData | string;
-      let headers: Record<string, string> = {};
-      if (selectedFile) {
-        const formData = new FormData();
-        formData.append('message', message);
-        if (conversationId) formData.append('conversation_id', conversationId);
-        formData.append('file', selectedFile);
-        body = formData;
-      } else {
-        const jsonBody: { message: string; conversation_id?: string } = {
-          message,
-        };
-        if (conversationId) jsonBody.conversation_id = conversationId;
-        headers = { 'Content-Type': 'application/json' };
-        body = JSON.stringify(jsonBody);
-      }
+
+      const formData = new FormData();
+      formData.append('message', message);
+
+      if (conversationId) formData.append('conversation_id', conversationId);
+      if (selectedFile) formData.append('file', selectedFile);
+
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers,
-        body,
+        body: formData,
       });
       return response.json();
     },
