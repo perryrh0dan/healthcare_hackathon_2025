@@ -6,6 +6,7 @@ from src.db import get_user
 
 router = APIRouter(prefix="/dashboard", tags=["dashboard"])
 
+
 @router.get("/widgets")
 async def get_widgets(request: Request):
     username = request.cookies.get("user")
@@ -20,3 +21,4 @@ async def get_widgets(request: Request):
     graph = DashboardGraph(llm.llm)
     widgets = graph.run(user.__dict__)
     return widgets
+
