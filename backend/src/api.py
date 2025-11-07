@@ -114,8 +114,18 @@ async def websocket_chat(websocket: WebSocket):
 
             update_conversation(user_id, conversation_id, history, conv.state)
 
+            # Convert messages to JSON-serializable format
+            history_serializable = [
+                {
+                    "role": msg.role,
+                    "content": msg.content,
+                    "timestamp": msg.timestamp.isoformat(),
+                }
+                for msg in history
+            ]
+
             await websocket.send_json(
-                {"history": history, "conversation_id": conversation_id}
+                {"history": history_serializable, "conversation_id": conversation_id}
             )
     except Exception as e:
         logger.error(f"WebSocket error: {str(e)}")

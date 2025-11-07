@@ -11,7 +11,7 @@ class LLM:
         try:
             self.bedrock_client = boto3.client("bedrock-runtime", region_name=CONFIG["AWS_DEFAULT_REGION"])
             self.llm = ChatBedrockConverse(
-                model="anthropic.claude-sonnet-4-5-20250929-v1:0",
+                model="us.anthropic.claude-sonnet-4-5-20250929-v1:0",
                 temperature=0.6,
                 client=self.bedrock_client,
             )
