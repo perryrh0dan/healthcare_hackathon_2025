@@ -466,9 +466,10 @@ def get_user_conversations(username: str) -> Dict[str, Conversation]:
 
 def save_daily_answers(username: str, answers: List[Answer]):
     now = datetime.now().isoformat()
+    print(answers)
     cursor.execute(
         "INSERT INTO daily_answers (username, date, answers) VALUES (?, ?, ?)",
-        (username, now, json.dumps(answers)),
+        (username, now, json.dumps([a.model_dump() for a in answers])),
     )
     conn.commit()
 
@@ -482,10 +483,13 @@ def get_daily_answers(username: str) -> List[DailyAnswers]:
     if row is None:
         return []
 
+    parsed = json.loads(row[1])
+    answers = [Answer.model_validate(item) for item in parsed]
+
     return [
         DailyAnswers(
-            date=row(0),
-            answers=row(1),
+            date=row[0],
+            answers=answers,
         )
     ]
 
