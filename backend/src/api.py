@@ -1,10 +1,12 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, BackgroundTasks, Request, UploadFile, Form
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional
 from uuid import uuid4
 from datetime import datetime
 import base64
+import os
 from .state import graph, summarization_graph
 from .routes import documents, user, calendar, daily, diet, dashboard
 from .db import (
@@ -60,10 +62,18 @@ async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, mes
         logger.warning("Received empty message and no image")
         return {"error": "No message or image provided"}
 
-    image_data = None
+    image_path = None
     if image:
         image_content = await image.read()
-        image_data = f"data:{image.content_type};base64,{base64.b64encode(image_content).decode('utf-8')}"
+        # Generate unique filename
+        if image.filename and '.' in image.filename:
+            ext = image.filename.split('.')[-1]
+        else:
+            ext = 'jpg'
+        filename = f"{uuid4()}.{ext}"
+        image_path = f"uploads/{filename}"
+        with open(image_path, "wb") as f:
+            f.write(image_content)
 
     if not conversation_id:
         conversation_id = str(uuid4())
@@ -78,13 +88,16 @@ async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, mes
         conv = Conversation(id=conversation_id)
     history = conv.messages
 
-    history.append(Message(role="user", content=message, timestamp=datetime.now(), image=image_data))
+    history.append(Message(role="user", content=message, timestamp=datetime.now(), image=image_path))
 
     messages = []
     for msg in history:
         if msg.role == "user":
             if msg.image:
-                content = [{"type": "text", "text": msg.content}, {"type": "image_url", "image_url": {"url": msg.image}}]
+                with open(msg.image, "rb") as f:
+                    image_content = f.read()
+                image_url = f"data:image/jpeg;base64,{base64.b64encode(image_content).decode('utf-8')}"
+                content = [{"type": "text", "text": msg.content}, {"type": "image_url", "image_url": {"url": image_url}}]
             else:
                 content = msg.content
             messages.append(HumanMessage(content=content))
@@ -127,3 +140,10 @@ async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, mes
     ]
 
     return {"history": history_serializable, "conversation_id": conversation_id}
+
+
+@app.get("/images/{path:path}")
+async def get_image(path: str):
+    if not os.path.exists(path):
+        return {"error": "Image not found"}
+    return FileResponse(path, media_type='image/jpeg')
