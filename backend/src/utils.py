@@ -6,6 +6,8 @@ import os
 from .config import logger
 from datetime import datetime, timedelta
 from .db import get_user_conversations
+from typing import List, Dict, Optional
+from .db import Event
 
 embeddings = Embeddings()
 
@@ -57,4 +59,34 @@ def get_recent_messages(username: str):
         if msg.timestamp and now - msg.timestamp < timedelta(hours=24)
     ]
     return recent
+
+
+def calculate_streak(daily_answers: List[Dict]) -> int:
+    """Calculate consecutive days streak of daily answers from today backwards."""
+    if not daily_answers:
+        return 0
+
+    # Sort by date descending (most recent first)
+    sorted_answers = sorted(daily_answers, key=lambda x: x['date'], reverse=True)
+    streak = 0
+    current_date = datetime.now().date()
+
+    for entry in sorted_answers:
+        entry_date = datetime.fromisoformat(entry['date']).date()
+        if entry_date == current_date:
+            streak += 1
+            current_date -= timedelta(days=1)
+        elif entry_date == current_date - timedelta(days=1):
+            streak += 1
+            current_date = entry_date - timedelta(days=1)
+        else:
+            break
+    return streak
+
+
+def get_next_appointment(events: List[Event]) -> Optional[Event]:
+    """Find the next upcoming appointment/event."""
+    now = datetime.now()
+    future_events = [e for e in events if e.from_timestamp > now]
+    return min(future_events, key=lambda e: e.from_timestamp) if future_events else None
 

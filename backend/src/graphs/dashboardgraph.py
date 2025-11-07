@@ -5,6 +5,8 @@ from langchain_core.messages import SystemMessage
 from pydantic import BaseModel, Field
 from ..config import logger
 import json
+from ..utils import calculate_streak, get_next_appointment
+from ..db import get_daily_answers
 
 
 class Widget(BaseModel):
@@ -55,6 +57,26 @@ class DashboardGraph(ABC):
 
     def widget_agent(self, state: AgentState):
         user_data = state["user_data"]
+        username = user_data.get("username")
+
+        daily_answers = get_daily_answers(username) if username else []
+        streak = calculate_streak(daily_answers)
+
+        events = user_data.get("events", [])
+        next_appt = get_next_appointment(events)
+
+        default_widgets = [
+            Widget(title="Daily Streak", body=f"{streak} days"),
+            Widget(
+                title="Next Appointment",
+                body=(
+                    next_appt.description[:27] + "..."
+                    if next_appt and len(next_appt.description) > 27
+                    else (next_appt.description if next_appt else "None scheduled")
+                ),
+            ),
+        ]
+
         messages = [
             SystemMessage(
                 content=f"""[Role]
@@ -78,14 +100,15 @@ Provide concise, actionable insights. Type must always be "text". Keep body unde
 
         try:
             response = self.structured_llm.invoke(messages)
-            state["widgets"] = response.widgets
+            ai_widgets = response.widgets
         except Exception as e:
             logger.error(f"Failed to generate structured widgets: {e}")
-            # Fallback to default widgets
-            state["widgets"] = [
+            ai_widgets = [
                 Widget(title="Health Overview", body="Generation failed."),
                 Widget(title="Goals", body="Generation failed."),
                 Widget(title="Reminders", body="Generation failed."),
                 Widget(title="Stats", body="Generation failed."),
             ]
+
+        state["widgets"] = default_widgets + ai_widgets
         return state
