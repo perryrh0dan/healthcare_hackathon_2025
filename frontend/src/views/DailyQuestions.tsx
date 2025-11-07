@@ -35,7 +35,7 @@ const DailyQuestions = () => {
   const { data: questions = [], isLoading, error } = useQuery({
     queryKey: ['daily-questions'],
     queryFn: async () => {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/daily?user_id=test`);
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/daily`, { credentials: 'include' });
       if (!response.ok) {
         throw new Error('Failed to fetch daily questions');
       }

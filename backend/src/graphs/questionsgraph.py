@@ -3,8 +3,9 @@ import json
 from pydantic import BaseModel, Field
 from langgraph.graph import StateGraph, END, START
 from langchain_core.messages import BaseMessage, HumanMessage, AIMessage, SystemMessage
+from src.db import User
 from ..config import logger
-from typing import Dict
+from .graph import BaseGraph
 
 
 class QuestionOption(BaseModel):
@@ -25,13 +26,10 @@ class QuestionList(BaseModel):
 
 
 class AgentState(TypedDict):
+    user: User
     messages: List[BaseMessage]
     summarization: str
-    registration_answers: list[Dict[str, str]]
     base_questions: list[Any]
-
-
-from .graph import BaseGraph
 
 
 class QuestionsGraph(BaseGraph):
@@ -50,11 +48,16 @@ class QuestionsGraph(BaseGraph):
             logger.error(f"Failed to initialize graph: {e}")
             raise
 
-    def chat(self, history, registration_answers, base_questions):
+    def chat(self, history, base_questions, user):
         try:
             logger.debug(f"Invoking graph with {len(history)} messages")
             result = self.graph.invoke(
-                {"messages": history, "registration_answers": registration_answers, "base_questions": base_questions, "summarization": ""}
+                {
+                    "user": user,
+                    "messages": history,
+                    "base_questions": base_questions,
+                    "summarization": "",
+                }
             )
             ai_response = result["messages"][-1]
             logger.debug("Graph invocation successful")
@@ -76,14 +79,21 @@ class QuestionsGraph(BaseGraph):
 
     def supervisor_agent(self, state: AgentState):
         base_questions = state["base_questions"]
-        registration_answers = state["registration_answers"]
-        health_summary = state["summarization"]
-        question_prompt = f"""Based on user registration answers: {registration_answers}
-Base questions already asked: {base_questions}
-Health summary: {health_summary}
+        recent_health_summary = state["user"].epa_summary
+        recent_chat_summary = state["summarization"]
+        question_prompt = f"""Base questions already asked: {base_questions}
+
+Recent health summary: {recent_health_summary}
+
+Recent chat summary: {recent_chat_summary}
+
 Generate up to 2 additional daily health questions if needed, different from the base ones."""
         structured_llm = self.llm.with_structured_output(QuestionList)
         response = structured_llm.invoke([HumanMessage(content=question_prompt)])
 
-        state["messages"].append(AIMessage(content=json.dumps([q.dict(by_alias=True) for q in response.questions])))
+        state["messages"].append(
+            AIMessage(
+                content=json.dumps([q.dict(by_alias=True) for q in response.questions])
+            )
+        )
         return state

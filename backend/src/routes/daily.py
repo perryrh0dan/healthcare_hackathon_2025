@@ -1,5 +1,8 @@
-from fastapi import APIRouter
-from ..state import daily_questions, users, questions_graph
+from http import HTTPStatus
+from fastapi import APIRouter, HTTPException, Request
+
+from src.db import get_user
+from ..state import daily_questions, questions_graph
 from ..utils import get_recent_messages
 from ..config import logger
 
@@ -7,8 +10,16 @@ router = APIRouter(prefix="/daily", tags=["daily"])
 
 
 @router.get("/")
-def get_daily_questions(user_id: str):
-    logger.info(f"Daily questions requested for user: {user_id}")
+def get_daily_questions(request: Request):
+    username = request.cookies.get("user")
+    if username is None:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
+
+    user = get_user(username)
+    if user is None:
+        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
+
+    logger.info(f"Daily questions requested for user: {username}")
     base_questions = [
         {"question": "How are you?", "type": "scale", "from": 1, "to": 5},
         {"question": "What is your blood pressure?", "type": "text"},
@@ -22,12 +33,10 @@ def get_daily_questions(user_id: str):
             ],
         },
     ]
-    if user_id not in users:
-        logger.warning(f"User {user_id} not found, returning base questions")
-        return base_questions
-    registration_answers = users[user_id]
-    recent_messages = get_recent_messages(user_id)
-    additional_questions = questions_graph.chat(recent_messages, registration_answers, base_questions)
+
+    recent_messages = get_recent_messages(username)
+
+    additional_questions = questions_graph.chat(recent_messages, base_questions, user)
     additional_questions = additional_questions[:2]
     return base_questions + additional_questions
 

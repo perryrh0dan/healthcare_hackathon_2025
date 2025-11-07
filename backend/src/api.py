@@ -1,11 +1,10 @@
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, WebSocket
-from typing import Dict, Any
 from uuid import uuid4
 from datetime import datetime
 
 from .routes import documents, user, calendar, daily
-from .state import graph, users, daily_questions
+from .state import graph
 from .db import (
     create_conversation,
     get_conversation,
@@ -84,12 +83,8 @@ async def websocket_chat(websocket: WebSocket):
                     else AIMessage(content=msg.content)
                     for msg in history
                 ]
-                daily_answers = daily_questions.get(user_id, [])
-                registration_answers = users.get(user_id, [])
-                logger.debug(
-                    f"Passing context for user {user_id}: daily_answers={len(daily_answers)}, registration_answers={len(registration_answers)}"
-                )
-                response = graph.chat(messages, daily_answers, registration_answers)
+                logger.debug(f"Passing context for user {user_id}")
+                response = graph.chat(messages, user)
             except Exception as e:
                 logger.error(f"Error processing message: {e}")
                 await websocket.send_json({"error": "Internal server error"})

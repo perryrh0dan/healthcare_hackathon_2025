@@ -45,8 +45,8 @@ except Exception as e:
     raise
 
 
-def get_recent_messages(user_id: str):
-    user_convs = get_user_conversations(user_id)
+def get_recent_messages(username: str):
+    user_convs = get_user_conversations(username)
     all_messages = []
     for conv in user_convs.values():
         all_messages.extend(conv.messages)
@@ -57,3 +57,4 @@ def get_recent_messages(user_id: str):
         if msg.timestamp and now - msg.timestamp < timedelta(hours=24)
     ]
     return recent
+
