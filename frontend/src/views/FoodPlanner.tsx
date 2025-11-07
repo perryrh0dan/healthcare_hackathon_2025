@@ -96,7 +96,7 @@ const FoodPlanner = () => {
             <h3 className="text-foreground mb-1 text-xl font-semibold">
               Ups! No Date Selected
             </h3>
-            <p className="text-muted-foreground max-w-md px-4 text-center text-sm">
+            <p className="text-muted-foreground px-4 text-center text-sm">
               Please pick a date from the calendar to see diary.
             </p>
           </div>

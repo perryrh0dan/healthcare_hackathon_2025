@@ -4,6 +4,7 @@ import IQuestion from "../components/question/question";
 import Question from "../components/question/question";
 import useAuthedMutation from "@/hooks/useAuthedMutation";
 import { useNavigate } from "@tanstack/react-router";
+import { useAuth } from "@/contexts";
 
 interface IQuestion {
   question: string
@@ -38,6 +39,8 @@ export type QuestionType = ITextQuestion | INumberQuestion | IEnumQuestion | ISc
 const DailyQuestions = () => {
   const navigate = useNavigate()
   const [index, setIndex] = useState<number>(0)
+  
+  const { refresh } = useAuth()
 
   const { data: questions = [], isLoading: isLoadingQuestions, error: errorQuestions } = useQuery({
     queryKey: ['daily-questions'],
@@ -67,7 +70,8 @@ const DailyQuestions = () => {
       }
       return response.json() as Promise<QuestionType[]>;
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await refresh()
       navigate({ to: '/home' })
     }
   });

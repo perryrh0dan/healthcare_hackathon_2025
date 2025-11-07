@@ -40,9 +40,9 @@ class DailyAnswers(BaseModel):
 # Database setup
 conn = sqlite3.connect("healthcare.db", check_same_thread=False)
 conn.execute("PRAGMA foreign_keys = ON")
-cursor = conn.cursor()
 
 # Create tables
+cursor = conn.cursor()
 cursor.execute(
     """
 CREATE TABLE IF NOT EXISTS users (
@@ -192,6 +192,7 @@ def update_user(update: UpdateUser):
     # Use existing password if not provided
     password = update.password or user.password
 
+    cursor = conn.cursor()
     cursor.execute(
         """
     UPDATE users SET
@@ -229,6 +230,7 @@ def update_user(update: UpdateUser):
 
 
 def create_user(user: User):
+    cursor = conn.cursor()
     cursor.execute(
         """
     INSERT INTO users (username, password, first_name, last_name, age, height, gender, status, allergies, issues, goal, epa_summary, recent_summary)
@@ -254,33 +256,37 @@ def create_user(user: User):
 
 
 def get_user(username: str):
+    cursor = conn.cursor()
     cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
     row = cursor.fetchone()
-    if row:
-        user = User(
-            username=row[0],
-            password=row[1],
-            first_name=row[2],
-            last_name=row[3],
-            age=row[4],
-            height=row[5],
-            gender=row[6],
-            status=row[7],
-            allergies=row[8],
-            issues=row[9],
-            goal=row[10],
-            epa_summary=row[11],
-            recent_summary=row[12],
-            events=get_user_events(username) or [],
-        )
+    if row is None:
+        return None
 
-        today = datetime.now().date().isoformat()
-        daily_answers = get_daily_answers(username)
-        user.needs_daily_questions = not any(
-            entry.date.startswith(today) for entry in daily_answers
-        )
-        return user
-    return None
+    print(row)
+
+    user = User(
+        username=row[0],
+        password=row[1],
+        first_name=row[2],
+        last_name=row[3],
+        age=row[4],
+        height=row[5],
+        gender=row[6],
+        status=row[7],
+        allergies=row[8],
+        issues=row[9],
+        goal=row[10],
+        epa_summary=row[11],
+        recent_summary=row[12],
+        events=get_user_events(username) or [],
+    )
+
+    today = datetime.now().date().isoformat()
+    daily_answers = get_daily_answers(username)
+    user.needs_daily_questions = not any(
+        entry.date.startswith(today) for entry in daily_answers
+    )
+    return user
 
 
 def add_event(
@@ -313,6 +319,7 @@ def add_event(
 
 
 def remove_event(username: str, event_id: str):
+    cursor = conn.cursor()
     cursor.execute(
         "DELETE FROM events WHERE id = ? AND username = ?", (event_id, username)
     )
@@ -327,6 +334,7 @@ def edit_event(
     from_timestamp: datetime,
     to_timestamp: datetime,
 ):
+    cursor = conn.cursor()
     cursor.execute(
         """
     UPDATE events SET description = ?, from_timestamp = ?, to_timestamp = ?
@@ -345,6 +353,7 @@ def edit_event(
 
 
 def get_user_events(username: str):
+    cursor = conn.cursor()
     cursor.execute(
         "SELECT id, description, from_timestamp, to_timestamp FROM events WHERE username = ?",
         (username,),
@@ -366,6 +375,7 @@ def get_user_events(username: str):
 def get_user_events_between_timestamps(
     username: str, from_timestamp: datetime, to_timestamp: datetime
 ):
+    cursor = conn.cursor()
     cursor.execute(
         """
     SELECT id, description, from_timestamp, to_timestamp FROM events
@@ -388,6 +398,7 @@ def get_user_events_between_timestamps(
 
 
 def create_conversation(username: str, conversation_id: str):
+    cursor = conn.cursor()
     cursor.execute(
         "INSERT INTO conversations (id, username, state, title) VALUES (?, ?, ?, ?)",
         (conversation_id, username, json.dumps({}), None),
@@ -396,6 +407,7 @@ def create_conversation(username: str, conversation_id: str):
 
 
 def get_conversation(username: str, conversation_id: str) -> Optional[Conversation]:
+    cursor = conn.cursor()
     cursor.execute(
         "SELECT state, title FROM conversations WHERE id = ? AND username = ?",
         (conversation_id, username),
@@ -431,6 +443,7 @@ def update_conversation(
     state: Dict[str, Any],
     title: Optional[str] = None,
 ):
+    cursor = conn.cursor()
     # Update state and title
     cursor.execute(
         "UPDATE conversations SET state = ?, title = ? WHERE id = ? AND username = ?",
@@ -454,6 +467,7 @@ def update_conversation(
 
 
 def get_user_conversations(username: str) -> Dict[str, Conversation]:
+    cursor = conn.cursor()
     cursor.execute("SELECT id FROM conversations WHERE username = ?", (username,))
     rows = cursor.fetchall()
     conversations = {}
@@ -465,6 +479,7 @@ def get_user_conversations(username: str) -> Dict[str, Conversation]:
 
 
 def save_daily_answers(username: str, answers: List[Answer]):
+    cursor = conn.cursor()
     now = datetime.now().isoformat()
     print(answers)
     cursor.execute(
@@ -475,6 +490,7 @@ def save_daily_answers(username: str, answers: List[Answer]):
 
 
 def get_daily_answers(username: str) -> List[DailyAnswers]:
+    cursor = conn.cursor()
     cursor.execute(
         "SELECT date, answers FROM daily_answers WHERE username = ?", (username,)
     )
@@ -495,6 +511,7 @@ def get_daily_answers(username: str) -> List[DailyAnswers]:
 
 
 def save_daily_questions(username: str, questions: List[Dict[str, Any]]):
+    cursor = conn.cursor()
     today = datetime.now().date().isoformat()
     cursor.execute(
         "INSERT OR REPLACE INTO daily_questions (username, date, questions) VALUES (?, ?, ?)",
@@ -504,6 +521,7 @@ def save_daily_questions(username: str, questions: List[Dict[str, Any]]):
 
 
 def get_daily_questions(username: str) -> Optional[List[Dict[str, Any]]]:
+    cursor = conn.cursor()
     today = datetime.now().date().isoformat()
     cursor.execute(
         "SELECT questions FROM daily_questions WHERE username = ? AND date = ?",
@@ -516,6 +534,7 @@ def get_daily_questions(username: str) -> Optional[List[Dict[str, Any]]]:
 
 
 def save_daily_dashboard_widgets(username: str, widgets: List[Dict[str, Any]]):
+    cursor = conn.cursor()
     today = datetime.now().date().isoformat()
     cursor.execute(
         "INSERT OR REPLACE INTO daily_dashboard_widgets (username, date, widgets) VALUES (?, ?, ?)",
@@ -525,6 +544,7 @@ def save_daily_dashboard_widgets(username: str, widgets: List[Dict[str, Any]]):
 
 
 def get_daily_dashboard_widgets(username: str) -> Optional[List[Dict[str, Any]]]:
+    cursor = conn.cursor()
     today = datetime.now().date().isoformat()
     cursor.execute(
         "SELECT widgets FROM daily_dashboard_widgets WHERE username = ? AND date = ?",
@@ -537,6 +557,7 @@ def get_daily_dashboard_widgets(username: str) -> Optional[List[Dict[str, Any]]]
 
 
 def update_recent_summary(username: str, summary: str):
+    cursor = conn.cursor()
     cursor.execute(
         "UPDATE users SET recent_summary = ? WHERE username = ?",
         (summary, username),
@@ -545,6 +566,7 @@ def update_recent_summary(username: str, summary: str):
 
 
 def get_recent_summary(username: str) -> Optional[str]:
+    cursor = conn.cursor()
     cursor.execute("SELECT recent_summary FROM users WHERE username = ?", (username,))
     row = cursor.fetchone()
     if row:
@@ -553,6 +575,7 @@ def get_recent_summary(username: str) -> Optional[str]:
 
 
 def get_all_users() -> List[str]:
+    cursor = conn.cursor()
     cursor.execute("SELECT username FROM users")
     rows = cursor.fetchall()
     return [row[0] for row in rows]

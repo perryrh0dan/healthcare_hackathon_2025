@@ -69,12 +69,12 @@ def calculate_streak(daily_answers: List[Dict]) -> int:
         return 0
 
     # Sort by date descending (most recent first)
-    sorted_answers = sorted(daily_answers, key=lambda x: x['date'], reverse=True)
+    sorted_answers = sorted(daily_answers, key=lambda x: x["date"], reverse=True)
     streak = 0
     current_date = datetime.now().date()
 
     for entry in sorted_answers:
-        entry_date = datetime.fromisoformat(entry['date']).date()
+        entry_date = datetime.fromisoformat(entry["date"]).date()
         if entry_date == current_date:
             streak += 1
             current_date -= timedelta(days=1)
@@ -97,11 +97,14 @@ def get_current_user(request: Request) -> User:
     """Dependency to extract and validate current user from cookie."""
     username = request.cookies.get("user")
     if username is None:
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="Not authenticated")
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED, detail="Not authenticated"
+        )
 
     user = get_user(username)
     if user is None:
-        raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED, detail="User not found")
+        raise HTTPException(
+            status_code=HTTPStatus.UNAUTHORIZED, detail="User not found"
+        )
 
     return user
-

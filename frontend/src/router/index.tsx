@@ -40,7 +40,7 @@ const dailyQuestionsRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/daily',
   component: () => (
-    <ProtectedRoute>
+    <ProtectedRoute route="daily">
       <DailyQuestions />
     </ProtectedRoute>
   ),

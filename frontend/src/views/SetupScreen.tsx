@@ -90,7 +90,7 @@ const SetupScreen = () => {
   if (error) return <div>Error loading questions</div>;
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full">
       <div className="flex flex-col items-center">
         <div className='grid grid-cols-[40px_1fr_40px] items-center justify-center w-full'>
           <ArrowLeft onClick={() => navigate({ to: '/home'})} />

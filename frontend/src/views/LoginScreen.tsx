@@ -34,7 +34,7 @@ const LoginScreen = () => {
   };
 
   return (
-    <div className="w-full max-w-md flex h-full justify-center items-center grow">
+    <div className="w-full flex h-full justify-center items-center grow">
       <div className="bg-card border-border flex flex-col items-center rounded-lg border p-6 shadow-lg">
         <h1 className="mb-8 text-center text-2xl font-bold">Login</h1>
         <form className="w-full max-w-sm space-y-4" onSubmit={handleSubmit}>

@@ -22,9 +22,13 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ route, children }) => {
     return <Navigate to='/setup' />;
   }
 
-  // if (route !== 'daily' && user?.needs_daily_questions) {
-  //   return <Navigate to='/daily' />;
-  // }
+  if (route === 'setup') {
+    return <>{children}</>;
+  }
+
+  if (route !== 'daily' && user?.needs_daily_questions) {
+    return <Navigate to='/daily' />;
+  }
 
   return <>{children}</>;
 };

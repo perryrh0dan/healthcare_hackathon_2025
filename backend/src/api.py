@@ -25,28 +25,8 @@ from .db import (
 from langchain_core.messages import HumanMessage, AIMessage
 from .config import logger
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Startup
-    scheduler = AsyncIOScheduler()
-    scheduler.add_job(
-        generate_daily_questions_for_all_users,
-        CronTrigger(hour=0, minute=0),  # Run at midnight
-        id="generate_daily_questions",
-        name="Generate daily questions for all users",
-    )
-    scheduler.add_job(
-        generate_daily_dashboard_for_all_users,
-        CronTrigger(hour=0, minute=0),  # Run at midnight
-        id="generate_daily_dashboard",
-        name="Generate daily dashboard for all users",
-    )
-    scheduler.start()
-    yield
-    # Shutdown
-    scheduler.shutdown()
 
-app = FastAPI(root_path="/api", lifespan=lifespan)
+app = FastAPI(root_path="/api")
 
 app.add_middleware(
     CORSMiddleware,
@@ -72,7 +52,13 @@ class ChatRequest(BaseModel):
 
 
 @app.post("/chat")
-async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, message: str = Form(...), conversation_id: Optional[str] = Form(None), image: Optional[UploadFile] = Form(None)):
+async def chat_endpoint(
+    background_tasks: BackgroundTasks,
+    request: Request,
+    message: str = Form(...),
+    conversation_id: Optional[str] = Form(None),
+    image: Optional[UploadFile] = Form(None),
+):
     user_id = request.cookies.get("user")
     if user_id is None:
         logger.warning(f"User {user_id} not found")
@@ -93,10 +79,10 @@ async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, mes
     if image:
         image_content = await image.read()
         # Generate unique filename
-        if image.filename and '.' in image.filename:
-            ext = image.filename.split('.')[-1]
+        if image.filename and "." in image.filename:
+            ext = image.filename.split(".")[-1]
         else:
-            ext = 'jpg'
+            ext = "jpg"
         filename = f"{uuid4()}.{ext}"
         image_path = f"uploads/{filename}"
         with open(image_path, "wb") as f:
@@ -115,7 +101,11 @@ async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, mes
         conv = Conversation(id=conversation_id)
     history = conv.messages
 
-    history.append(Message(role="user", content=message, timestamp=datetime.now(), image=image_path))
+    history.append(
+        Message(
+            role="user", content=message, timestamp=datetime.now(), image=image_path
+        )
+    )
 
     messages = []
     for msg in history:
@@ -124,7 +114,10 @@ async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, mes
                 with open(msg.image, "rb") as f:
                     image_content = f.read()
                 image_url = f"data:image/jpeg;base64,{base64.b64encode(image_content).decode('utf-8')}"
-                content = [{"type": "text", "text": msg.content}, {"type": "image_url", "image_url": {"url": image_url}}]
+                content = [
+                    {"type": "text", "text": msg.content},
+                    {"type": "image_url", "image_url": {"url": image_url}},
+                ]
             else:
                 content = msg.content
             messages.append(HumanMessage(content=content))
@@ -138,7 +131,9 @@ async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, mes
         logger.error(f"Error processing message: {e}")
         return {"error": "Internal server error"}
 
-    response_text = response.get("response", response) if isinstance(response, dict) else response
+    response_text = (
+        response.get("response", response) if isinstance(response, dict) else response
+    )
 
     if response_text:
         assistant_msg = Message(
@@ -147,7 +142,9 @@ async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, mes
             timestamp=datetime.now(),
         )
         history.append(assistant_msg)
-        logger.debug(f"Assistant response sent for user {user_id}, conversation {conversation_id}")
+        logger.debug(
+            f"Assistant response sent for user {user_id}, conversation {conversation_id}"
+        )
 
     # Generate title for new conversations
     title = conv.title
@@ -159,7 +156,9 @@ async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, mes
                 # Take first 30 characters of the user message as title
                 content = first_user_msg.content.strip()
                 title = content[:30] + ("..." if len(content) > 30 else "")
-                logger.debug(f"Generated title for conversation {conversation_id}: {title}")
+                logger.debug(
+                    f"Generated title for conversation {conversation_id}: {title}"
+                )
         except Exception as e:
             logger.error(f"Error generating title: {e}")
             title = f"Conversation {conversation_id[:8]}"  # Fallback title
@@ -167,7 +166,12 @@ async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, mes
     update_conversation(user_id, conversation_id, history, conv.state, title)
 
     # Trigger async summarization
-    messages_for_summary = [HumanMessage(content=msg.content) if msg.role == "user" else AIMessage(content=msg.content) for msg in history]
+    messages_for_summary = [
+        HumanMessage(content=msg.content)
+        if msg.role == "user"
+        else AIMessage(content=msg.content)
+        for msg in history
+    ]
     background_tasks.add_task(summarization_graph.chat, messages_for_summary, user)
 
     # Convert messages to JSON-serializable format
@@ -188,4 +192,5 @@ async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, mes
 async def get_image(path: str):
     if not os.path.exists(path):
         return {"error": "Image not found"}
-    return FileResponse(path, media_type='image/jpeg')
+    return FileResponse(path, media_type="image/jpeg")
+
