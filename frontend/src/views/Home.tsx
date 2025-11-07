@@ -33,19 +33,15 @@ const Home = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col gap-4">
+    <div className="flex flex-col gap-4">
       <h2 className='text-4xl font-semibold'>Weekly<br />Recap</h2>
       <div
-        className="grow transition-all duration-500 grid grid-cols-2 gap-4"
+        className={`grow transition-all duration-500 grid grid-cols-2 gap-4 ${showTop === false ? 'max-h-1' : ''}`}
       >
         <div className="col-span-2 rounded-lg bg-green-300 p-6 shadow-lg">
           <h3 className="text-lg font-semibold text-white">
             Welcome back {user?.first_name}!
           </h3>
-        </div>
-        <div className="rounded-lg bg-green-100 p-4 shadow-lg">
-          <h3 className="mb-2 text-lg font-semibold">Health Goals</h3>
-          <p>Steps: 10,000 | Water: 8 glasses</p>
         </div>
         { widgets?.map((w, idx) => (
           <div key={idx} className="rounded-lg bg-green-100 p-4 shadow-lg">

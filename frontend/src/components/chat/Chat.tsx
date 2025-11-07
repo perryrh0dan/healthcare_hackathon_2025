@@ -101,7 +101,7 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
             </div>
           )}
           {open && (
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex-1 overflow-y-auto">
               {messages.map((msg, idx) => (
                 <Message key={idx} text={msg.text} sender={msg.sender} />
               ))}
