@@ -66,8 +66,7 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
       if (conversationId) formData.append('conversation_id', conversationId);
       if (selectedFile) formData.append('image', selectedFile);
 
-    console.log(formData)
-    console.log(selectedFile)
+      setSelectedFile(null);
       const response = await fetch('/api/chat', {
         method: 'POST',
         body: formData,
@@ -96,7 +95,6 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
       setMessages((prev) => [...prev, { text: input, sender: 'user' }]);
       sendMessageMutation.mutate(input);
       setInput('');
-      setSelectedFile(selectedFile);
     }
   };
 

@@ -1,42 +1,55 @@
 import { useState } from 'react';
 import { Calendar } from '../components/ui/calendar';
 import { format } from 'date-fns';
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
+import { useQuery } from '@tanstack/react-query';
 
 const FoodPlanner = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
-  // Sample meal data - in a real app, this would come from an API or context
-  const meals = {
-    [format(new Date(), 'yyyy-MM-dd')]: {
-      breakfast: 'Oatmeal with fruits',
-      lunch: 'Grilled chicken salad',
-      dinner: 'Salmon with vegetables',
+  const {
+    data: meals = {},
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['diet-plan'],
+    queryFn: async () => {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/diet/plan`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            days: 7,
+            preferences: {},
+          }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch diet plan');
+      }
+      return response.json();
     },
-    [format(new Date(Date.now() + 86400000), 'yyyy-MM-dd')]: {
-      breakfast: 'Greek yogurt with berries',
-      lunch: 'Turkey wrap',
-      dinner: 'Stir-fried tofu with rice',
-    },
-    [format(new Date(Date.now() + 2 * 86400000), 'yyyy-MM-dd')]: {
-      breakfast: 'Smoothie bowl',
-      lunch: 'Quinoa salad',
-      dinner: 'Grilled steak with sweet potatoes',
-    },
-  };
+  });
 
   const selectedDateKey = selectedDate
     ? format(selectedDate, 'yyyy-MM-dd')
     : '';
   const dayMeals = meals[selectedDateKey] || {};
 
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error loading diet plan</div>;
+
   return (
     <div className="flex min-h-screen w-full flex-col gap-4">
-      <div className='grid grid-cols-[40px_1fr_40px] items-center justify-center w-full'>
-        <ArrowLeft onClick={() => navigate({ to: '/home'})} />
-        <h2 className="text-4xl font-semibold inline-flex justify-center">Food Planner</h2>
+      <div className="grid w-full grid-cols-[40px_1fr_40px] items-center justify-center">
+        <ArrowLeft onClick={() => navigate({ to: '/home' })} />
+        <h2 className="inline-flex justify-center text-4xl font-semibold">
+          Food Planner
+        </h2>
         <div></div>
       </div>
       <div className="flex gap-8">
@@ -79,7 +92,7 @@ const FoodPlanner = () => {
             </div>
           </>
         ) : (
-          <div className=" flex min-h-[200px] flex-col items-center justify-center">
+          <div className="flex min-h-[200px] flex-col items-center justify-center">
             <h3 className="text-foreground mb-1 text-xl font-semibold">
               Ups! No Date Selected
             </h3>
