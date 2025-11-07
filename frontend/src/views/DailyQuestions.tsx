@@ -5,6 +5,7 @@ import Question from "../components/question/question";
 import useAuthedMutation from "@/hooks/useAuthedMutation";
 import { useNavigate } from "@tanstack/react-router";
 import { useAuth } from "@/contexts";
+import { Button } from "@/components/ui/button";
 
 interface IQuestion {
   question: string
@@ -42,7 +43,7 @@ const DailyQuestions = () => {
   
   const { refresh } = useAuth()
 
-  const { data: questions = [], isLoading: isLoadingQuestions, error: errorQuestions } = useQuery({
+  const { data: questions = [], isLoading: isLoading, error: error, refetch} = useQuery({
     queryKey: ['daily-questions'],
     queryFn: async () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/daily`, { credentials: 'include' });
@@ -76,8 +77,19 @@ const DailyQuestions = () => {
     }
   });
 
-  if (isLoadingQuestions) return <div>Loading...</div>;
-  if (errorQuestions) return <div>Error loading questions</div>;
+  if (isLoading)
+    return (
+      <div className="flex min-h-screen animate-pulse items-center justify-center">
+        Loading...
+      </div>
+    );
+  if (error)
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+        <p>Error loading diet plan</p>
+        <Button onClick={() => refetch()}>Reconnect</Button>
+      </div>
+    );
 
   const question = questions[index]
 

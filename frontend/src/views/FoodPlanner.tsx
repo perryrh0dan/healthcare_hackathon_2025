@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
+import { Button } from '../components/ui/button';
 
 const FoodPlanner = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const FoodPlanner = () => {
     data: meals = {},
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: ['diet-plan'],
     queryFn: async () => {
@@ -41,8 +43,19 @@ const FoodPlanner = () => {
     : '';
   const dayMeals = meals[selectedDateKey] || {};
 
-  if (isLoading) return <div>Loading...</div>;
-  if (error) return <div>Error loading diet plan</div>;
+  if (isLoading)
+    return (
+      <div className="flex min-h-screen animate-pulse items-center justify-center">
+        Loading...
+      </div>
+    );
+  if (error)
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+        <p>Error loading diet plan</p>
+        <Button onClick={() => refetch()}>Reconnect</Button>
+      </div>
+    );
 
   return (
     <div className="flex min-h-screen w-full flex-col gap-4">
