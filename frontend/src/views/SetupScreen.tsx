@@ -9,8 +9,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
+import useAuthedQuery from '@/hooks/useAuthedQuery';
+import useAuthedMutation from '@/hooks/useAuthedMutation';
+import { useAuth } from '@/contexts';
 
 interface Question {
   question: string;
@@ -27,11 +29,13 @@ const SetupScreen = () => {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [file, setFile] = useState<File | null>(null);
 
+  const { refresh } = useAuth()
+
   const {
     data: questions = [],
     isLoading,
     error,
-  } = useQuery({
+  } = useAuthedQuery({
     queryKey: ['registration'],
     queryFn: async () => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/users/setup`);
@@ -42,7 +46,7 @@ const SetupScreen = () => {
     },
   });
 
-  const { mutate: submitProfile } = useMutation({
+  const { mutate: submitProfile } = useAuthedMutation({
     mutationKey: ['setup'],
     mutationFn: async (formData: FormData) => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/users/setup`, {
@@ -50,11 +54,15 @@ const SetupScreen = () => {
         body: formData,
         credentials: 'include'
       });
+
       if (!response.ok) {
-        throw new Error('Failed to submit profile');
+        const error: any = new Error('Failed to update profile');
+        error.response = response;
+        throw error;
       }
     },
-    onSuccess: () => {
+    onSuccess: async () => {
+      await refresh()
       navigate({ to: '/home'})
     },
     onError: () => {

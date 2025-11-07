@@ -13,7 +13,6 @@ const Navbar = () => {
           <Link to="/">
             <img src={logo} alt="Erlangen Logo" className="h-10 w-auto" />
           </Link>
-          <h1 className="text-xl font-semibold">Healthcare Dashboard</h1>
         </div>
         <Button onClick={logout} variant="outline" style={{ color: '#333' }}>
           Logout

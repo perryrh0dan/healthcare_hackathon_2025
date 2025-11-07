@@ -8,7 +8,6 @@ from fastapi import (
     Response,
     UploadFile,
 )
-from fastapi.exceptions import FastAPIError
 
 from src.clients.llm import LLM
 from ..config import logger
