@@ -33,7 +33,7 @@ const SetupScreen = () => {
 
   const {
     data: questions = [],
-    isLoading,
+    isLoading: isLoadingQuestions,
     error,
   } = useAuthedQuery({
     queryKey: ['registration'],
@@ -46,7 +46,7 @@ const SetupScreen = () => {
     },
   });
 
-  const { mutate: submitProfile } = useAuthedMutation({
+  const { mutate: submitProfile, isPending: isPendingSetup } = useAuthedMutation({
     mutationKey: ['setup'],
     mutationFn: async (formData: FormData) => {
       const response = await fetch(`${import.meta.env.VITE_API_URL}/users/setup`, {
@@ -84,7 +84,7 @@ const SetupScreen = () => {
     submitProfile(formData);
   };
 
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoadingQuestions) return <div>Loading...</div>;
 
   if (error) return <div>Error loading questions</div>;
 
@@ -167,8 +167,8 @@ const SetupScreen = () => {
           <p className="text-muted-foreground text-sm">
             All fields marked with * are required.
           </p>
-          <Button type="submit" className="w-full">
-            Save Profile
+          <Button type="submit" className="w-full" disabled={isPendingSetup}>
+            { isPendingSetup ? "Setting up...": "Save Profile" }
           </Button>
         </form>
       </div>
