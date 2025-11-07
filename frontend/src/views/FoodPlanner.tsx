@@ -47,9 +47,9 @@ const FoodPlanner = () => {
     <div className="flex min-h-screen w-full flex-col gap-4">
       <div className="grid w-full grid-cols-[40px_1fr_40px] items-center justify-center">
         <ArrowLeft onClick={() => navigate({ to: '/home' })} />
-        <h2 className="inline-flex justify-center text-4xl font-semibold">
+        <h1 className="text-2xl font-medium inline-flex justify-center">
           Food Planner
-        </h2>
+        </h1>
         <div></div>
       </div>
       <div className="flex gap-8">

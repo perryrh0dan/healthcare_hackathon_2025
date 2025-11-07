@@ -10,6 +10,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <div
+          className='bg-[#efefef]'
           style={{
             minHeight: '100vh',
             display: 'flex',

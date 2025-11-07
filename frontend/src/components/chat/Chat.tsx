@@ -111,10 +111,10 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
 
   return (
     <div
-      className={`absolute ${open ? 'top-0 right-0 bottom-0 left-0' : ''} bg-white`}
+      className={`absolute ${open ? 'top-0 right-0 bottom-0 left-0' : ''} bg-[#f5f5f5]`}
     >
       <div
-        className={`fixed right-0 bottom-0 left-0 ${open ? 'top-0' : ''} flex gap-2 border-t border-gray-300 bg-white`}
+        className={`fixed right-0 bottom-0 left-0 ${open ? 'top-0' : ''} flex gap-2 border-t border-gray-300 bg-[#f5f5f5]`}
       >
         <div className="relative flex h-full w-full flex-col p-4">
           {open ? (

@@ -94,7 +94,7 @@ const SetupScreen = () => {
       <div className="flex flex-col items-center">
         <div className='grid grid-cols-[40px_1fr_40px] items-center justify-center w-full'>
           <ArrowLeft onClick={() => navigate({ to: '/home'})} />
-          <h1 className="text-4xl font-semibold inline-flex justify-center">
+          <h1 className="text-2xl font-medium inline-flex justify-center">
             Personal data
           </h1>
           <div></div>

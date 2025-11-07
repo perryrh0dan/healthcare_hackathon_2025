@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Link } from '@tanstack/react-router';
 import Chat from '../components/chat/Chat';
 import useAuthedQuery from '@/hooks/useAuthedQuery';
+import { Calendar, Cog, Notebook } from 'lucide-react';
 
 type Widget = {
   title: string
@@ -33,31 +34,35 @@ const Home = () => {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <h2 className='text-4xl font-semibold'>Weekly<br />Recap</h2>
+    <div className="flex flex-col gap-4 text-[#545454]">
+      <h1 className="text-2xl font-medium inline-flex">
+        Weekly Recap
+      </h1>
       <div
         className={`grow transition-all duration-500 grid grid-cols-2 gap-4 ${showTop === false ? 'max-h-1' : ''}`}
       >
-        <div className="col-span-2 rounded-lg bg-green-300 p-6 shadow-lg">
-          <h3 className="text-lg font-semibold text-white">
+        <div className="col-span-2 rounded-lg bg-[#f5f5f5] p-6 shadow-sm">
+          <h3 className="text-lg font-semibold">
             Welcome back {user?.first_name}!
           </h3>
         </div>
+        <div className="col-span-2 grid grid-cols-4 gap-4">
+          <Link className="rounded-lg bg-purple-100 p-4 shadow-lg flex justify-center items-center" to="/food-planner">
+            <Calendar size={40} />
+          </Link>
+          <Link className="rounded-lg bg-purple-100 p-4 shadow-lg flex justify-center items-center" to="/daily">
+            <Notebook size={40} />
+          </Link>
+          <Link className="rounded-lg bg-purple-100 p-4 shadow-lg flex justify-center items-center" to="/setup">
+            <Cog size={40} />
+          </Link>
+        </div>
         { widgets?.map((w, idx) => (
-          <div key={idx} className="rounded-lg bg-green-100 p-4 shadow-lg">
+          <div key={idx} className="rounded-lg bg-[#f5f5f5] p-6 shadow-sm">
             <h3 className="mb-2 text-lg font-semibold">{w.title}</h3>
             <p>{w.body}</p>
           </div>
         ))}
-        <Link  className="rounded-lg bg-cyan-100 p-4 shadow-lg" to="/food-planner">
-          <h3 className="mb-2 text-lg font-semibold">Food Plan</h3>
-        </Link>
-        <Link className="rounded-lg bg-teal-100 p-4 shadow-lg" to="/daily">
-          <h3 className="mb-2 text-lg font-semibold">Daily Questions</h3>
-        </Link>
-        <Link className="rounded-lg bg-purple-100 p-4 shadow-lg" to="/setup">
-          <h3 className="mb-2 text-lg font-semibold">Setup</h3>
-        </Link>
       </div>
       <div className="mb-14">
         <Chat open={!showTop} onSend={handleChatSend} onClose={() => setShowTop(true)} onOpen={() => setShowTop(false)} />
