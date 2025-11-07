@@ -2,10 +2,11 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, WebSocket
 from typing import Dict, Any
 from uuid import uuid4
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from .routes import documents, user, calendar, daily
-from .state import graph, users, conversations, daily_questions
+from .state import graph, users, daily_questions
+from .db import create_conversation, get_conversation, update_conversation, Message, Conversation
 from langchain_core.messages import HumanMessage, AIMessage
 from .config import logger
 
@@ -63,25 +64,28 @@ async def websocket_chat(websocket: WebSocket):
 
             if not conversation_id:
                 conversation_id = str(uuid4())
+                create_conversation(user_id, conversation_id)
                 logger.info(
                     f"New conversation started for user {user_id}: {conversation_id}"
                 )
 
-            user_conversations = conversations.setdefault(user_id, {})
-            conv_data = user_conversations.get(
-                conversation_id, {"messages": [], "state": {}}
-            )
-            history = conv_data["messages"]
+            conv = get_conversation(user_id, conversation_id)
+            if conv is None:
+                create_conversation(user_id, conversation_id)
+                conv = get_conversation(user_id, conversation_id)
+            if conv is None:
+                conv = Conversation(id=conversation_id)
+            history = conv.messages
 
             history.append(
-                {"role": "user", "content": message, "timestamp": datetime.now()}
+                Message(role="user", content=message, timestamp=datetime.now())
             )
 
             try:
                 messages = [
-                    HumanMessage(content=msg["content"])
-                    if msg["role"] == "user"
-                    else AIMessage(content=msg["content"])
+                    HumanMessage(content=msg.content)
+                    if msg.role == "user"
+                    else AIMessage(content=msg.content)
                     for msg in history
                 ]
                 daily_answers = daily_questions.get(user_id, [])
@@ -102,17 +106,17 @@ async def websocket_chat(websocket: WebSocket):
             )
 
             if response_text:
-                assistant_msg = {
-                    "role": "assistant",
-                    "content": response_text,
-                    "timestamp": datetime.now(),
-                }
+                assistant_msg = Message(
+                    role="assistant",
+                    content=response_text,
+                    timestamp=datetime.now(),
+                )
                 history.append(assistant_msg)
                 logger.debug(
                     f"Assistant response sent for user {user_id}, conversation {conversation_id}"
                 )
 
-            user_conversations[conversation_id] = {"messages": history}
+            update_conversation(user_id, conversation_id, history, conv.state)
 
             await websocket.send_json(
                 {"history": history, "conversation_id": conversation_id}

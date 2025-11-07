@@ -4,6 +4,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader
 import os
 from .config import logger
+from datetime import datetime, timedelta
+from .db import get_user_conversations
 
 embeddings = Embeddings()
 
@@ -41,3 +43,17 @@ try:
 except Exception as e:
     logger.error(f"Failed to add documents to vector store: {e}")
     raise
+
+
+def get_recent_messages(user_id: str):
+    user_convs = get_user_conversations(user_id)
+    all_messages = []
+    for conv in user_convs.values():
+        all_messages.extend(conv.messages)
+    now = datetime.now()
+    recent = [
+        msg
+        for msg in all_messages
+        if msg.timestamp and now - msg.timestamp < timedelta(hours=24)
+    ]
+    return recent

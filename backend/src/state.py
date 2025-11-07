@@ -1,31 +1,8 @@
-from typing import Dict, Any
-from datetime import datetime, timedelta
-from uuid import uuid4
-
+from typing import Dict
 from .clients.llm import LLM
 from .graphs.chatgraph import ChatGraph
 from .graphs.questionsgraph import QuestionsGraph
 from .config import logger
-
-conversations: Dict[str, Dict[str, Dict[str, Any]]] = {
-    "test_user": {
-        "conv1": {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": "I feel tired today",
-                    "timestamp": datetime.now(),
-                },
-                {
-                    "role": "assistant",
-                    "content": "That sounds concerning. Have you been sleeping well?",
-                    "timestamp": datetime.now(),
-                },
-            ],
-            "state": {},
-        }
-    }
-}
 
 daily_questions: Dict[str, list[Dict[str, str]]] = {}
 users: Dict[str, list[Dict[str, str]]] = {
@@ -41,21 +18,6 @@ users: Dict[str, list[Dict[str, str]]] = {
         {"question": "What is your goal?", "answer": "Stay healthy"},
     ]
 }
-
-
-def get_recent_messages(user_id: str):
-    if user_id not in conversations:
-        return []
-    all_messages = []
-    for conv in conversations[user_id].values():
-        all_messages.extend(conv["messages"])
-    now = datetime.now()
-    recent = [
-        msg
-        for msg in all_messages
-        if msg.get("timestamp") and now - msg["timestamp"] < timedelta(hours=24)
-    ]
-    return recent
 
 
 try:

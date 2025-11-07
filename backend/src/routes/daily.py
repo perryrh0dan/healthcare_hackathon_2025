@@ -1,5 +1,6 @@
 from fastapi import APIRouter
-from ..state import daily_questions, users, get_recent_messages, questions_graph
+from ..state import daily_questions, users, questions_graph
+from ..utils import get_recent_messages
 from ..config import logger
 
 router = APIRouter(prefix="/daily", tags=["daily"])

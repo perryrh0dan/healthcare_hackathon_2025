@@ -1,9 +1,7 @@
-from typing import Literal, Optional, List
-from pydantic import BaseModel, create_model
+from typing import Literal, Optional, List, Dict, Any
+from pydantic import BaseModel
 from datetime import datetime
 import uuid
-
-users = []
 
 
 class Event(BaseModel):
@@ -11,6 +9,22 @@ class Event(BaseModel):
     description: str
     from_timestamp: datetime
     to_timestamp: datetime
+
+
+class Message(BaseModel):
+    role: str
+    content: str
+    timestamp: datetime
+
+
+class Conversation(BaseModel):
+    id: str
+    messages: List[Message] = []
+    state: Dict[str, Any] = {}
+
+
+users = []
+conversations = {}
 
 
 class User(BaseModel):
@@ -113,3 +127,27 @@ def get_user_events_between_timestamps(username: str, from_timestamp: datetime, 
         return None
     filtered_events = [e for e in user.events if e.from_timestamp < to_timestamp and e.to_timestamp > from_timestamp]
     return filtered_events
+
+
+def create_conversation(user_id: str, conversation_id: str):
+    global conversations
+    if user_id not in conversations:
+        conversations[user_id] = {}
+    conversations[user_id][conversation_id] = Conversation(id=conversation_id)
+
+
+def get_conversation(user_id: str, conversation_id: str) -> Optional[Conversation]:
+    if user_id not in conversations:
+        return None
+    return conversations[user_id].get(conversation_id)
+
+
+def update_conversation(user_id: str, conversation_id: str, messages: List[Message], state: Dict[str, Any]):
+    global conversations
+    if user_id not in conversations:
+        conversations[user_id] = {}
+    conversations[user_id][conversation_id] = Conversation(id=conversation_id, messages=messages, state=state)
+
+
+def get_user_conversations(user_id: str) -> Dict[str, Conversation]:
+    return conversations.get(user_id, {})
