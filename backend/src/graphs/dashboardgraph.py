@@ -1,5 +1,5 @@
 from abc import ABC
-from typing import TypedDict, List, Dict, Literal
+from typing import Optional, TypedDict, List, Dict, Literal
 from langgraph.graph import StateGraph, END, START
 from langchain_core.messages import SystemMessage
 from pydantic import BaseModel, Field
@@ -11,8 +11,9 @@ from ..db import get_daily_answers
 
 class Widget(BaseModel):
     title: str
-    type: Literal["text"] = "text"
+    type: Literal["text"] | Literal["streak"] | Literal["event"] = "text"
     body: str = Field(..., max_length=30)
+    timestamp: Optional[str] = None
 
 
 class WidgetResponse(BaseModel):
@@ -66,14 +67,16 @@ class DashboardGraph(ABC):
         next_appt = get_next_appointment(events)
 
         default_widgets = [
-            Widget(title="Daily Streak", body=f"{streak} days"),
+            Widget(title="Daily Streak", type="streak", body=f"{streak}"),
             Widget(
                 title="Next Appointment",
+                type="event",
                 body=(
                     next_appt.description[:27] + "..."
                     if next_appt and len(next_appt.description) > 27
                     else (next_appt.description if next_appt else "None scheduled")
                 ),
+                timestamp=next_appt.from_timestamp.isoformat() if next_appt else None,
             ),
         ]
 
