@@ -1,26 +1,13 @@
 import { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
 import { Link } from '@tanstack/react-router';
 import { ChevronDown, ChevronUp } from 'lucide-react';
-import Message from '../components/ui/message';
+import Chat from '../components/chat/Chat';
 
 const Home = () => {
   const { user } = useAuth();
-  const [message, setMessage] = useState('');
   const [showTop, setShowTop] = useState(true);
-  const [messages, setMessages] = useState<
-    { text: string; sender: 'user' | 'bot' }[]
-  >([]);
-
-  const handleSend = () => {
-    if (message.trim()) {
-      setMessages((prev) => [...prev, { text: message, sender: 'user' }]);
-      setMessage('');
-      setShowTop(false);
-    }
-  };
 
   return (
     <div className="relative min-h-screen w-100">
@@ -32,12 +19,11 @@ const Home = () => {
       </Button>
 
       <div
-        className={`mb-8 transition-all duration-500  
-            ${showTop 
-              ? ' opacity-100 visible block' 
-              : 'max-h-0 overflow-hidden hidden'
-            } 
-            rounded-lg p-3 shadow-lg`}
+        className={`mb-8 transition-all duration-500 ${
+          showTop
+            ? 'visible block opacity-100'
+            : 'hidden max-h-0 overflow-hidden'
+        } rounded-lg p-3 shadow-lg`}
       >
         <div className="col-span-2 rounded-lg bg-rose-100 p-4 shadow-lg">
           <h3 className="mb-2 text-lg font-semibold">
@@ -80,21 +66,8 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="mb-20 flex-1 overflow-y-auto ">
-        {messages.map((msg, index) => (
-          <Message key={index} text={msg.text} sender={msg.sender} />
-        ))}
-      </div>
-
-      <div className="fixed right-0 bottom-0 left-0 flex gap-2 border-t border-gray-300 bg-white p-4">
-        <Input
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder="Type a message..."
-          onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-          className="flex-1"
-        />
-        <Button onClick={handleSend}>Send</Button>
+      <div className="flex-1">
+        <Chat />
       </div>
     </div>
   );
