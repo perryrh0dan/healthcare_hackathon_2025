@@ -1,5 +1,4 @@
 from langchain_aws import BedrockEmbeddings
-from langchain_community.embeddings import HuggingFaceEmbeddings
 from dotenv import load_dotenv
 from ..config import CONFIG, logger
 

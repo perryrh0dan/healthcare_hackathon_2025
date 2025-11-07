@@ -1,6 +1,5 @@
 import boto3
 from langchain_aws import ChatBedrockConverse
-from langchain_xai import ChatXAI
 from dotenv import load_dotenv
 from ..config import CONFIG, logger
 
