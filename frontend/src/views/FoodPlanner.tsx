@@ -4,64 +4,69 @@ import { format } from 'date-fns';
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
-import { Button } from '../components/ui/button';
 
 const FoodPlanner = () => {
   const navigate = useNavigate();
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-
-  const {
-    data: meals = {},
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ['diet-plan'],
-    queryFn: async () => {
-      const response = await fetch(
-        `${import.meta.env.VITE_API_URL}/diet/plan`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-           body: JSON.stringify({
-             days: 7,
-             start_date: format(new Date(), 'yyyy-MM-dd'),
-             preferences: {},
-           }),
-        }
-      );
-      if (!response.ok) {
-        throw new Error('Failed to fetch diet plan');
-      }
-      return response.json();
-    },
-  });
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(
+    new Date()
+  );
 
   const selectedDateKey = selectedDate
     ? format(selectedDate, 'yyyy-MM-dd')
     : '';
-  const dayMeals = meals[selectedDateKey] || {};
 
-  if (isLoading)
-    return (
-      <div className="flex min-h-screen animate-pulse items-center justify-center">
-        Loading...
-      </div>
-    );
-  if (error)
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center gap-4">
-        <p>Error loading diet plan</p>
-        <Button onClick={() => refetch()}>Reconnect</Button>
-      </div>
-    );
+  const { data: allEvents = [] } = useQuery({
+    queryKey: ['calendar'],
+    queryFn: async () => {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/calendar/`,
+        {
+          credentials: 'include',
+        }
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch calendar events');
+      }
+      const data = await response.json();
+      return data.events || [];
+    },
+  });
+
+  const eventDates = allEvents.map((e) => new Date(e.from_timestamp));
+  const modifiers = { hasEvent: eventDates };
+
+  const eventsForDay = allEvents.filter(
+    (e) => format(new Date(e.from_timestamp), 'yyyy-MM-dd') === selectedDateKey
+  );
+
+  const parsedMeals = {
+    breakfast:
+      eventsForDay
+        .filter((e) => e.description.includes('Breakfast:'))
+        .map((e) => e.description.split('Breakfast: ')[1])
+        .join('<br />') || 'No breakfast planned',
+    lunch:
+      eventsForDay
+        .filter((e) => e.description.includes('Lunch:'))
+        .map((e) => e.description.split('Lunch: ')[1])
+        .join('<br />') || 'No lunch planned',
+    dinner:
+      eventsForDay
+        .filter((e) => e.description.includes('Dinner:'))
+        .map((e) => e.description.split('Dinner: ')[1])
+        .join('<br />') || 'No dinner planned',
+    snack:
+      eventsForDay
+        .filter((e) => e.description.includes('Snack:'))
+        .map((e) => e.description.split('Snack: ')[1])
+        .join('<br />') || 'No snack planned',
+  };
 
   return (
     <div className="flex min-h-screen w-full flex-col gap-4">
       <div className="grid w-full grid-cols-[40px_1fr_40px] items-center justify-center">
         <ArrowLeft onClick={() => navigate({ to: '/home' })} />
-        <h1 className="text-2xl font-medium inline-flex justify-center">
+        <h1 className="inline-flex justify-center text-2xl font-medium">
           Food Planner
         </h1>
         <div></div>
@@ -74,6 +79,7 @@ const FoodPlanner = () => {
             onSelect={setSelectedDate}
             className="w-full"
             captionLayout="dropdown"
+            modifiers={modifiers}
           />
         </div>
       </div>
@@ -84,24 +90,34 @@ const FoodPlanner = () => {
             <h3 className="mb-2 text-2xl font-semibold">
               Meals for {format(selectedDate, 'MMMM d, yyyy')}
             </h3>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <div className="rounded-lg bg-cyan-100 p-4 shadow-lg">
                 <h4 className="text-lg font-semibold">Breakfast</h4>
-                <p className="text-gray-600">
-                  {dayMeals.breakfast || 'No breakfast planned'}
-                </p>
+                <p
+                  className="text-gray-600"
+                  dangerouslySetInnerHTML={{ __html: parsedMeals.breakfast }}
+                />
               </div>
               <div className="rounded-lg bg-teal-100 p-4 shadow-lg">
                 <h4 className="text-lg font-semibold">Lunch</h4>
-                <p className="text-gray-600">
-                  {dayMeals.lunch || 'No lunch planned'}
-                </p>
+                <p
+                  className="text-gray-600"
+                  dangerouslySetInnerHTML={{ __html: parsedMeals.lunch }}
+                />
               </div>
               <div className="rounded-lg bg-blue-50 p-4 shadow-lg">
                 <h4 className="text-lg font-semibold">Dinner</h4>
-                <p className="text-gray-600">
-                  {dayMeals.dinner || 'No dinner planned'}
-                </p>
+                <p
+                  className="text-gray-600"
+                  dangerouslySetInnerHTML={{ __html: parsedMeals.dinner }}
+                />
+              </div>
+              <div className="rounded-lg bg-green-100 p-4 shadow-lg">
+                <h4 className="text-lg font-semibold">Snack</h4>
+                <p
+                  className="text-gray-600"
+                  dangerouslySetInnerHTML={{ __html: parsedMeals.snack }}
+                />
               </div>
             </div>
           </>
