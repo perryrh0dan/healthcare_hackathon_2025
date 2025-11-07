@@ -7,9 +7,10 @@ from fastapi import (
     Request,
     Response,
     UploadFile,
-    status,
 )
 from fastapi.exceptions import FastAPIError
+
+from src.clients.llm import LLM
 from ..config import logger
 from http import HTTPStatus
 
@@ -72,14 +73,35 @@ async def setup(
     allergies: str = Form(...),
     issues: str = Form(...),
     goal: str = Form(...),
-    electronic_patient_record: UploadFile = File(...),
+    electronic_patient_record: UploadFile | None = File(None),
 ):
     username = request.cookies.get("user")
     if username is None:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
 
-    data = await electronic_patient_record.read()
-    print(data)
+    if electronic_patient_record is not None:
+        data = await electronic_patient_record.read()
+
+        messages = [
+            {
+                "role": "user",
+                "content": (
+                    f"""[Role]
+Your are an professional doctor assistent and your job is to analyse the german electronic patient record.
+
+[Task]
+Take the Data and create a detailed report of the patient health status that can be used later on to provide details informations and guidence to the patient.
+
+[Data]
+{data}
+                """
+                ),
+            },
+        ]
+
+        llm = LLM()
+        response = llm.llm.invoke(input=messages)
+        print(response)
 
     update_user(
         UpdateUser(
