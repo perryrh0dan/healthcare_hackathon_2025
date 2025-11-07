@@ -262,8 +262,6 @@ def get_user(username: str):
     if row is None:
         return None
 
-    print(row)
-
     user = User(
         username=row[0],
         password=row[1],
@@ -283,11 +281,15 @@ def get_user(username: str):
 
     today = datetime.now().date().isoformat()
     daily_answers = get_daily_answers(username)
-    user.needs_daily_questions = not any(entry.date.startswith(today) for entry in daily_answers)
+    user.needs_daily_questions = not any(
+        entry.date.startswith(today) for entry in daily_answers
+    )
     return user
 
 
-def add_event(username: str, description: str, from_timestamp: datetime, to_timestamp: datetime):
+def add_event(
+    username: str, description: str, from_timestamp: datetime, to_timestamp: datetime
+):
     user = get_user(username)
     if user is None:
         return None
@@ -316,7 +318,9 @@ def add_event(username: str, description: str, from_timestamp: datetime, to_time
 
 def remove_event(username: str, event_id: str):
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM events WHERE id = ? AND username = ?", (event_id, username))
+    cursor.execute(
+        "DELETE FROM events WHERE id = ? AND username = ?", (event_id, username)
+    )
     conn.commit()
     return cursor.rowcount > 0
 
@@ -366,7 +370,9 @@ def get_user_events(username: str):
     return events
 
 
-def get_user_events_between_timestamps(username: str, from_timestamp: datetime, to_timestamp: datetime):
+def get_user_events_between_timestamps(
+    username: str, from_timestamp: datetime, to_timestamp: datetime
+):
     cursor = conn.cursor()
     cursor.execute(
         """
@@ -475,7 +481,7 @@ def save_daily_answers(username: str, answers: List[Answer]):
     now = datetime.now().isoformat()
     print(answers)
     cursor.execute(
-        "INSERT INTO daily_answers (username, date, answers) VALUES (?, ?, ?)",
+        "INSERT INTO daily_answers (username, date, answers) VALUES (?, ?, ?) ON CONFLICT(username, date) DO UPDATE SET answers = excluded.answers;",
         (username, now, json.dumps([a.model_dump() for a in answers])),
     )
     conn.commit()
@@ -483,8 +489,15 @@ def save_daily_answers(username: str, answers: List[Answer]):
 
 def get_daily_answers(username: str) -> List[DailyAnswers]:
     cursor = conn.cursor()
-    cursor.execute("SELECT date, answers FROM daily_answers WHERE username = ? ORDER BY date", (username,))
+    cursor.execute(
+        "SELECT date, answers FROM daily_answers WHERE username = ? ORDER BY date",
+        (username,),
+    )
     rows = cursor.fetchall()
+    cursor.execute(
+        "SELECT date, answers FROM daily_answers WHERE username = ? ORDER BY date",
+        (username,),
+    )
 
     if not rows:
         return []
@@ -616,7 +629,9 @@ def generate_daily_questions_for_all_users():
         ]
 
         recent_messages = get_recent_messages(username)
-        additional_questions = questions_graph.chat(recent_messages, base_questions, user)
+        additional_questions = questions_graph.chat(
+            recent_messages, base_questions, user
+        )
         additional_questions = additional_questions[:2]
         all_questions = base_questions + additional_questions
 

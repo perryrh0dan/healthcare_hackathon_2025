@@ -81,8 +81,6 @@ async def setup(
     data = await electronic_patient_record.read() if electronic_patient_record else None
     epa_summary = graph.run(data) if data else None
 
-    print(epa_summary)
-
     update_user(
         UpdateUser(
             username=user.username,

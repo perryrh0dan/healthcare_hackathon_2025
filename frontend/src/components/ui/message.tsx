@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
 
 interface MessageProps {
   text: string;
@@ -18,7 +19,7 @@ const Message: React.FC<MessageProps> = ({ image, text, sender }) => {
             : 'bg-gray-200 text-gray-800'
         }`}
       >
-        <span>{text}</span>
+        <ReactMarkdown>{text}</ReactMarkdown>
         { image !== undefined && image !== null && ( <img src={`/api/${image}`} /> ) }
       </div>
     </div>

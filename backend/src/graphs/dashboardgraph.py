@@ -100,15 +100,9 @@ class DashboardGraph(ABC):
         messages = [
             SystemMessage(
                 content=f"""[Role]
-You are a health dashboard assistant. Based on the user's profile data, generate exactly 4 personalized widgets with useful short insights for their health dashboard.
+You are a health dashboard assistant. Based on the user's profile data, generate exactly 4 personalized widgets with really useful tips and insigs for the user.
 
 Each widget has title, type (always "text"), and body (max 30 characters).
-
-Focus on:
-1. Health overview summary
-2. Current goals and progress
-3. Important reminders or alerts (e.g., allergies, issues)
-4. Personalized health stats or ongoing tips
 
 Provide concise, actionable insights. Type must always be "text". Keep body under 30 characters.
 
