@@ -1,9 +1,10 @@
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi import FastAPI, BackgroundTasks, Request
+from fastapi import FastAPI, BackgroundTasks, Request, UploadFile, Form
 from pydantic import BaseModel
 from typing import Optional
 from uuid import uuid4
 from datetime import datetime
+import base64
 from .state import graph, summarization_graph
 from .routes import documents, user, calendar, daily, diet, dashboard
 from .db import (
@@ -38,10 +39,11 @@ app.include_router(dashboard.router)
 class ChatRequest(BaseModel):
     message: str
     conversation_id: Optional[str] = None
+    image: Optional[UploadFile] = None
 
 
 @app.post("/chat")
-async def chat_endpoint(request: Request, data: ChatRequest, background_tasks: BackgroundTasks):
+async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, message: str = Form(...), conversation_id: Optional[str] = Form(None), image: Optional[UploadFile] = Form(None)):
     user_id = request.cookies.get("user")
     if user_id is None:
         logger.warning(f"User {user_id} not found")
@@ -52,12 +54,16 @@ async def chat_endpoint(request: Request, data: ChatRequest, background_tasks: B
         logger.warning(f"User {user_id} not found")
         return {"error": "User not found"}
 
-    message = data.message
-    conversation_id = data.conversation_id or ""
+    conversation_id = conversation_id or ""
 
-    if not message:
-        logger.warning("Received empty message")
-        return {"error": "No message provided"}
+    if not message and not image:
+        logger.warning("Received empty message and no image")
+        return {"error": "No message or image provided"}
+
+    image_data = None
+    if image:
+        image_content = await image.read()
+        image_data = f"data:{image.content_type};base64,{base64.b64encode(image_content).decode('utf-8')}"
 
     if not conversation_id:
         conversation_id = str(uuid4())
@@ -72,10 +78,20 @@ async def chat_endpoint(request: Request, data: ChatRequest, background_tasks: B
         conv = Conversation(id=conversation_id)
     history = conv.messages
 
-    history.append(Message(role="user", content=message, timestamp=datetime.now()))
+    history.append(Message(role="user", content=message, timestamp=datetime.now(), image=image_data))
+
+    messages = []
+    for msg in history:
+        if msg.role == "user":
+            if msg.image:
+                content = [{"type": "text", "text": msg.content}, {"type": "image_url", "image_url": {"url": msg.image}}]
+            else:
+                content = msg.content
+            messages.append(HumanMessage(content=content))
+        else:
+            messages.append(AIMessage(content=msg.content))
 
     try:
-        messages = [HumanMessage(content=msg.content) if msg.role == "user" else AIMessage(content=msg.content) for msg in history]
         logger.debug(f"Passing context for user {user_id}")
         response = graph.chat(messages, user)
     except Exception as e:
@@ -105,6 +121,7 @@ async def chat_endpoint(request: Request, data: ChatRequest, background_tasks: B
             "role": msg.role,
             "content": msg.content,
             "timestamp": msg.timestamp.isoformat(),
+            "image": msg.image,
         }
         for msg in history
     ]

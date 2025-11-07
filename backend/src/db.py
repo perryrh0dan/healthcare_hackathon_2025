@@ -17,6 +17,7 @@ class Message(BaseModel):
     role: str
     content: str
     timestamp: datetime
+    image: Optional[str] = None
 
 
 class Conversation(BaseModel):
@@ -83,6 +84,7 @@ CREATE TABLE IF NOT EXISTS messages (
     role TEXT NOT NULL,
     content TEXT NOT NULL,
     timestamp TEXT NOT NULL,
+    image TEXT,
     FOREIGN KEY (conversation_id) REFERENCES conversations (id)
 )
 """
@@ -103,6 +105,13 @@ conn.commit()
 # Add recent_summary column if not exists
 try:
     cursor.execute("ALTER TABLE users ADD COLUMN recent_summary TEXT;")
+    conn.commit()
+except sqlite3.OperationalError:
+    pass  # Column already exists
+
+# Add image column to messages if not exists
+try:
+    cursor.execute("ALTER TABLE messages ADD COLUMN image TEXT;")
     conn.commit()
 except sqlite3.OperationalError:
     pass  # Column already exists
@@ -345,7 +354,7 @@ def get_conversation(user_id: str, conversation_id: str) -> Optional[Conversatio
     state = json.loads(row[0])
     # Get messages
     cursor.execute(
-        "SELECT role, content, timestamp FROM messages WHERE conversation_id = ? ORDER BY timestamp",
+        "SELECT role, content, timestamp, image FROM messages WHERE conversation_id = ? ORDER BY timestamp",
         (conversation_id,),
     )
     message_rows = cursor.fetchall()
@@ -356,6 +365,7 @@ def get_conversation(user_id: str, conversation_id: str) -> Optional[Conversatio
                 role=msg_row[0],
                 content=msg_row[1],
                 timestamp=datetime.fromisoformat(msg_row[2]),
+                image=msg_row[3],
             )
         )
     return Conversation(id=conversation_id, messages=messages, state=state)
@@ -372,12 +382,13 @@ def update_conversation(user_id: str, conversation_id: str, messages: List[Messa
     # Insert new messages
     for message in messages:
         cursor.execute(
-            "INSERT INTO messages (conversation_id, role, content, timestamp) VALUES (?, ?, ?, ?)",
+            "INSERT INTO messages (conversation_id, role, content, timestamp, image) VALUES (?, ?, ?, ?, ?)",
             (
                 conversation_id,
                 message.role,
                 message.content,
                 message.timestamp.isoformat(),
+                message.image,
             ),
         )
     conn.commit()
