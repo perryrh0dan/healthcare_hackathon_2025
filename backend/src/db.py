@@ -387,9 +387,15 @@ def get_user_conversations(user_id: str) -> Dict[str, Conversation]:
 
 
 def save_daily_answers(user_id: str, answers: List[Dict[str, Any]]):
+    current_answers = get_daily_answers(user_id)
+    new_entry = {
+        "date": datetime.now().isoformat(),
+        "answers": answers
+    }
+    current_answers.append(new_entry)
     cursor.execute(
         "INSERT OR REPLACE INTO daily_answers (user_id, answers) VALUES (?, ?)",
-        (user_id, json.dumps(answers)),
+        (user_id, json.dumps(current_answers)),
     )
     conn.commit()
 
@@ -398,7 +404,12 @@ def get_daily_answers(user_id: str) -> List[Dict[str, Any]]:
     cursor.execute("SELECT answers FROM daily_answers WHERE user_id = ?", (user_id,))
     row = cursor.fetchone()
     if row:
-        return json.loads(row[0])
+        loaded = json.loads(row[0])
+        if isinstance(loaded, list) and loaded and isinstance(loaded[0], dict) and 'date' in loaded[0]:
+            return loaded
+        else:
+            # Old format, wrap it
+            return [{'date': None, 'answers': loaded}]
     return []
 
 
