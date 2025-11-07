@@ -3,7 +3,7 @@ from fastapi import FastAPI, WebSocket
 from uuid import uuid4
 from datetime import datetime
 from .state import graph
-from .routes import documents, user, calendar, daily, diet
+from .routes import documents, user, calendar, daily, diet, dashboard
 from .db import (
     create_conversation,
     get_conversation,
@@ -29,6 +29,7 @@ app.include_router(user.router)
 app.include_router(calendar.router)
 app.include_router(daily.router)
 app.include_router(diet.router)
+app.include_router(dashboard.router)
 
 
 @app.websocket("/ws/chat")

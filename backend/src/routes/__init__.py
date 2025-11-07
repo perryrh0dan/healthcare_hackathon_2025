@@ -1,1 +1,1 @@
-from . import documents, user, calendar, daily
+from . import documents, user, calendar, daily, dashboard

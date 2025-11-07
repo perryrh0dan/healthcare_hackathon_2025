@@ -1,8 +1,8 @@
 from http import HTTPStatus
 from fastapi import APIRouter, HTTPException, Request
 
-from src.db import get_user
-from ..state import daily_questions, questions_graph
+from src.db import get_user, save_daily_answers
+from ..state import questions_graph
 from ..utils import get_recent_messages
 from ..config import logger
 
@@ -43,6 +43,6 @@ def get_daily_questions(request: Request):
 
 @router.post("/")
 def submit_daily_answers(answers: list[dict], user_id: str):
-    daily_questions[user_id] = answers
+    save_daily_answers(user_id, answers)
     logger.info(f"Received daily answers for user {user_id}: {answers}")
     return {"status": "success"}

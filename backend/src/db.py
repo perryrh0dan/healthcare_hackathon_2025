@@ -79,6 +79,14 @@ CREATE TABLE IF NOT EXISTS messages (
 )
 """)
 
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS daily_answers (
+    user_id TEXT PRIMARY KEY,
+    answers TEXT NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users (username)
+)
+""")
+
 conn.commit()
 
 
@@ -362,3 +370,19 @@ def get_user_conversations(user_id: str) -> Dict[str, Conversation]:
         if conv:
             conversations[row[0]] = conv
     return conversations
+
+
+def save_daily_answers(user_id: str, answers: List[Dict[str, Any]]):
+    cursor.execute(
+        "INSERT OR REPLACE INTO daily_answers (user_id, answers) VALUES (?, ?)",
+        (user_id, json.dumps(answers)),
+    )
+    conn.commit()
+
+
+def get_daily_answers(user_id: str) -> List[Dict[str, Any]]:
+    cursor.execute("SELECT answers FROM daily_answers WHERE user_id = ?", (user_id,))
+    row = cursor.fetchone()
+    if row:
+        return json.loads(row[0])
+    return []
