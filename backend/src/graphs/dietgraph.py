@@ -82,10 +82,12 @@ class DietGraph(BaseGraph):
             return "An error occurred while processing your diet planning request."
 
     def supervisor_agent(self, state: AgentState):
+        days = state['diet_plan'].get('days', 1)
+        start_date = state['diet_plan'].get('start_date', 'today')
         context_msg = f"User's daily answers: {state['daily_answers']}. Registration info: {state['registration_answers']}. Current diet plan: {state['diet_plan']}."
         system_message = SystemMessage(
             content=context_msg
-            + " You are a diet planning assistant. Help the user plan their meals for the next days or specific days based on their health information and goals. Avoid any meals that the user does not like. Keep going until you planned all the days you need to plan"
+            + f" You are a diet planning assistant. Help the user plan their meals for the next {days} days starting from {start_date} based on their health information and goals. Avoid any meals that the user does not like. Keep going until you have planned meals for ALL {days} days starting from {start_date}."
         )
         messages_with_context = [system_message] + state["messages"]
 

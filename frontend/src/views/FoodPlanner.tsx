@@ -22,10 +22,11 @@ const FoodPlanner = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({
-            days: 7,
-            preferences: {},
-          }),
+           body: JSON.stringify({
+             days: 7,
+             start_date: format(new Date(), 'yyyy-MM-dd'),
+             preferences: {},
+           }),
         }
       );
       if (!response.ok) {
