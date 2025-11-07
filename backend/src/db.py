@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS users (
     status TEXT NOT NULL,
     allergies TEXT,
     issues TEXT,
-    goal TEXT
+    goal TEXT,
+    epa_summary TEXT
 )
 """)
 
@@ -93,6 +94,7 @@ class User(BaseModel):
     allergies: Optional[str] = None
     issues: Optional[str] = None
     goal: Optional[str] = None
+    epa_summary: Optional[str] = None
     events: List[Event] = []
 
 
@@ -120,7 +122,8 @@ def update_user(update: UpdateUser):
         status = ?,
         allergies = ?,
         issues = ?,
-        goal = ?
+        goal = ?,
+        epa_summary = ?
     WHERE username = ?
     """,
         (
@@ -134,6 +137,7 @@ def update_user(update: UpdateUser):
             update.allergies,
             update.issues,
             update.goal,
+            update.epa_summary,
             update.username,
         ),
     )
@@ -143,8 +147,8 @@ def update_user(update: UpdateUser):
 def create_user(user: User):
     cursor.execute(
         """
-    INSERT INTO users (username, password, first_name, last_name, age, height, gender, status, allergies, issues, goal)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO users (username, password, first_name, last_name, age, height, gender, status, allergies, issues, goal, epa_summary)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     """,
         (
             user.username,
@@ -158,6 +162,7 @@ def create_user(user: User):
             user.allergies,
             user.issues,
             user.goal,
+            user.epa_summary,
         ),
     )
     conn.commit()
@@ -179,6 +184,7 @@ def get_user(username: str):
             allergies=row[8],
             issues=row[9],
             goal=row[10],
+            epa_summary=row[11],
             events=get_user_events(username) or [],
         )
     return None

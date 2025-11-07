@@ -9,7 +9,9 @@ load_dotenv()
 class LLM:
     def __init__(self):
         try:
-            self.bedrock_client = boto3.client("bedrock-runtime", region_name=CONFIG["AWS_DEFAULT_REGION"])
+            self.bedrock_client = boto3.client(
+                "bedrock-runtime", region_name=CONFIG["AWS_DEFAULT_REGION"]
+            )
             self.llm = ChatBedrockConverse(
                 model="us.anthropic.claude-sonnet-4-5-20250929-v1:0",
                 temperature=0.6,

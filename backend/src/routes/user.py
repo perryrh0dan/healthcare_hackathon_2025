@@ -10,6 +10,7 @@ from fastapi import (
 )
 
 from src.clients.llm import LLM
+from src.graphs.epa import EPAGraph
 from ..config import logger
 from http import HTTPStatus
 
@@ -74,33 +75,19 @@ async def setup(
     goal: str = Form(...),
     electronic_patient_record: UploadFile | None = File(None),
 ):
+    logger.info("/setup")
+
     username = request.cookies.get("user")
     if username is None:
         raise HTTPException(status_code=HTTPStatus.UNAUTHORIZED)
 
-    if electronic_patient_record is not None:
-        data = await electronic_patient_record.read()
+    llm = LLM()
+    graph = EPAGraph(llm.llm)
 
-        messages = [
-            {
-                "role": "user",
-                "content": (
-                    f"""[Role]
-Your are an professional doctor assistent and your job is to analyse the german electronic patient record.
+    data = await electronic_patient_record.read() if electronic_patient_record else None
+    epa_summary = graph.run(data) if data else None
 
-[Task]
-Take the Data and create a detailed report of the patient health status that can be used later on to provide details informations and guidence to the patient.
-
-[Data]
-{data}
-                """
-                ),
-            },
-        ]
-
-        llm = LLM()
-        response = llm.llm.invoke(input=messages)
-        print(response)
+    print(epa_summary)
 
     update_user(
         UpdateUser(
@@ -114,6 +101,7 @@ Take the Data and create a detailed report of the patient health status that can
             issues=issues,
             goal=goal,
             status="finished",
+            epa_summary=epa_summary,
         )
     )
 
