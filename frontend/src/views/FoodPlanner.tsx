@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Calendar } from '../components/ui/calendar';
 import { format } from 'date-fns';
+import { ArrowLeft } from 'lucide-react'
+import { useNavigate } from '@tanstack/react-router';
 
 const FoodPlanner = () => {
+  const navigate = useNavigate()
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
   // Sample meal data - in a real app, this would come from an API or context
@@ -31,7 +34,11 @@ const FoodPlanner = () => {
 
   return (
     <div className="flex min-h-screen w-full flex-col gap-4 p-4">
-      <h2 className="text-4xl font-semibold">Food Planner</h2>
+      <div className='grid grid-cols-[40px_1fr_40px] items-center justify-center'>
+        <ArrowLeft onClick={() => navigate({ to: '/home'})} />
+        <h2 className="text-4xl font-semibold inline-flex justify-center">Food Planner</h2>
+        <div></div>
+      </div>
       <div className="flex gap-8">
         <div className="flex-1">
           <Calendar
