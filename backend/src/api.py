@@ -8,7 +8,7 @@ from datetime import datetime
 import base64
 import os
 from .state import graph, summarization_graph
-from .routes import documents, user, calendar, daily, diet, dashboard
+from .routes import documents, user, calendar, daily, diet, dashboard, conversations
 from .db import (
     create_conversation,
     get_conversation,
@@ -36,6 +36,7 @@ app.include_router(calendar.router)
 app.include_router(daily.router)
 app.include_router(diet.router)
 app.include_router(dashboard.router)
+app.include_router(conversations.router)
 
 
 class ChatRequest(BaseModel):
@@ -122,7 +123,22 @@ async def chat_endpoint(background_tasks: BackgroundTasks, request: Request, mes
         history.append(assistant_msg)
         logger.debug(f"Assistant response sent for user {user_id}, conversation {conversation_id}")
 
-    update_conversation(user_id, conversation_id, history, conv.state)
+    # Generate title for new conversations
+    title = conv.title
+    if not title and len(history) >= 2:  # Has at least user and assistant messages
+        try:
+            # Create a simple title based on the first user message
+            first_user_msg = next((msg for msg in history if msg.role == "user"), None)
+            if first_user_msg:
+                # Take first 30 characters of the user message as title
+                content = first_user_msg.content.strip()
+                title = content[:30] + ("..." if len(content) > 30 else "")
+                logger.debug(f"Generated title for conversation {conversation_id}: {title}")
+        except Exception as e:
+            logger.error(f"Error generating title: {e}")
+            title = f"Conversation {conversation_id[:8]}"  # Fallback title
+
+    update_conversation(user_id, conversation_id, history, conv.state, title)
 
     # Trigger async summarization
     messages_for_summary = [HumanMessage(content=msg.content) if msg.role == "user" else AIMessage(content=msg.content) for msg in history]

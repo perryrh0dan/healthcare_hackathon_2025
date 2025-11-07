@@ -24,6 +24,7 @@ class Conversation(BaseModel):
     id: str
     messages: List[Message] = []
     state: Dict[str, Any] = {}
+    title: Optional[str] = None
 
 
 class Answer(BaseModel):
@@ -117,6 +118,13 @@ except sqlite3.OperationalError:
 # Add image column to messages if not exists
 try:
     cursor.execute("ALTER TABLE messages ADD COLUMN image TEXT;")
+    conn.commit()
+except sqlite3.OperationalError:
+    pass  # Column already exists
+
+# Add title column to conversations if not exists
+try:
+    cursor.execute("ALTER TABLE conversations ADD COLUMN title TEXT;")
     conn.commit()
 except sqlite3.OperationalError:
     pass  # Column already exists
@@ -350,21 +358,22 @@ def get_user_events_between_timestamps(
 
 def create_conversation(user_id: str, conversation_id: str):
     cursor.execute(
-        "INSERT INTO conversations (id, user_id, state) VALUES (?, ?, ?)",
-        (conversation_id, user_id, json.dumps({})),
+        "INSERT INTO conversations (id, user_id, state, title) VALUES (?, ?, ?, ?)",
+        (conversation_id, user_id, json.dumps({}), None),
     )
     conn.commit()
 
 
 def get_conversation(user_id: str, conversation_id: str) -> Optional[Conversation]:
     cursor.execute(
-        "SELECT state FROM conversations WHERE id = ? AND user_id = ?",
+        "SELECT state, title FROM conversations WHERE id = ? AND user_id = ?",
         (conversation_id, user_id),
     )
     row = cursor.fetchone()
     if not row:
         return None
     state = json.loads(row[0])
+    title = row[1]
     # Get messages
     cursor.execute(
         "SELECT role, content, timestamp, image FROM messages WHERE conversation_id = ? ORDER BY timestamp",
@@ -381,16 +390,16 @@ def get_conversation(user_id: str, conversation_id: str) -> Optional[Conversatio
                 image=msg_row[3],
             )
         )
-    return Conversation(id=conversation_id, messages=messages, state=state)
+    return Conversation(id=conversation_id, messages=messages, state=state, title=title)
 
 
 def update_conversation(
-    user_id: str, conversation_id: str, messages: List[Message], state: Dict[str, Any]
+    user_id: str, conversation_id: str, messages: List[Message], state: Dict[str, Any], title: Optional[str] = None
 ):
-    # Update state
+    # Update state and title
     cursor.execute(
-        "UPDATE conversations SET state = ? WHERE id = ? AND user_id = ?",
-        (json.dumps(state), conversation_id, user_id),
+        "UPDATE conversations SET state = ?, title = ? WHERE id = ? AND user_id = ?",
+        (json.dumps(state), title, conversation_id, user_id),
     )
     # Delete existing messages
     cursor.execute("DELETE FROM messages WHERE conversation_id = ?", (conversation_id,))
