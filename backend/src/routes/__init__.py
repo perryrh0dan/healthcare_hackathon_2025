@@ -1,1 +1,1 @@
-from . import documents, user, calendar
+from . import documents, user, calendar, daily

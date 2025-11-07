@@ -4,10 +4,8 @@ from typing import Dict, Any
 from uuid import uuid4
 from datetime import datetime, timedelta
 
-from .routes import documents, user, calendar
-from .clients.llm import LLM
-from .graphs.chatgraph import ChatGraph
-from .graphs.questionsgraph import QuestionsGraph
+from .routes import documents, user, calendar, daily
+from .state import graph, users, conversations, daily_questions
 from langchain_core.messages import HumanMessage, AIMessage
 from .config import logger
 
@@ -24,133 +22,9 @@ app.add_middleware(
 app.include_router(documents.router)
 app.include_router(user.router)
 app.include_router(calendar.router)
-
-conversations: Dict[str, Dict[str, Dict[str, Any]]] = {
-    "test_user": {
-        "conv1": {
-            "messages": [
-                {
-                    "role": "user",
-                    "content": "I feel tired today",
-                    "timestamp": datetime.now(),
-                },
-                {
-                    "role": "assistant",
-                    "content": "That sounds concerning. Have you been sleeping well?",
-                    "timestamp": datetime.now(),
-                },
-            ],
-            "state": {},
-        }
-    }
-}
-
-daily_questions: Dict[str, list[Dict[str, str]]] = {}
-users: Dict[str, list[Dict[str, str]]] = {
-    "test_user": [
-        {"question": "What is your name?", "answer": "John Doe"},
-        {"question": "What is your age?", "answer": "30"},
-        {"question": "What is your height?", "answer": "180 cm"},
-        {"question": "What is your gender?", "answer": "male"},
-        {
-            "question": "Do you have typical health issues. If so what are those?",
-            "answer": "None",
-        },
-        {"question": "What is your goal?", "answer": "Stay healthy"},
-    ]
-}
+app.include_router(daily.router)
 
 
-def get_recent_messages(user_id: str):
-    if user_id not in conversations:
-        return []
-    all_messages = []
-    for conv in conversations[user_id].values():
-        all_messages.extend(conv["messages"])
-    now = datetime.now()
-    recent = [
-        msg
-        for msg in all_messages
-        if msg.get("timestamp") and now - msg["timestamp"] < timedelta(hours=24)
-    ]
-    return recent
-
-
-try:
-    llm = LLM()
-    graph = ChatGraph(llm.llm)
-    questions_graph = QuestionsGraph(llm.llm)
-    logger.info("API components initialized")
-except Exception as e:
-    logger.error(f"Failed to initialize API components: {e}")
-    raise
-
-
-@app.get("/daily")
-def get_daily_questions(user_id: str):
-    logger.info(f"Daily questions requested for user: {user_id}")
-    base_questions = [
-        {"question": "How are you?", "type": "scale", "from": 1, "to": 5},
-        {"question": "What is your blood pressure?", "type": "text"},
-        {"question": "What is your weight?", "type": "text"},
-        {
-            "question": "Did you take any medication today?",
-            "type": "enum",
-            "options": [
-                {"label": "Yes", "value": "yes"},
-                {"label": "No", "value": "no"},
-            ],
-        },
-    ]
-    if user_id not in users:
-        logger.warning(f"User {user_id} not found, returning base questions")
-        return base_questions
-    registration_answers = users[user_id]
-    recent_messages = get_recent_messages(user_id)
-    additional_questions = questions_graph.chat(
-        recent_messages, registration_answers, base_questions
-    )
-    additional_questions = additional_questions[:2]
-    return base_questions + additional_questions
-
-
-@app.get("/registration")
-def get_registration_questions():
-    logger.info("Registration questions requested")
-    return [
-        {"question": "What is your first name?", "type": "text", "field": "first_name"},
-        {"question": "What is your last name?", "type": "text", "field": "last_name"},
-        {"question": "What is your age?", "type": "number", "field": "age"},
-        {"question": "What is your height?", "type": "text", "field": "height"},
-        {
-            "question": "What is your gender?",
-            "type": "enum",
-            "options": [
-                {"label": "Male", "value": "male"},
-                {"label": "Female", "value": "female"},
-                {"label": "Other", "value": "other"},
-            ],
-            "field": "gender",
-        },
-        {
-            "question": "Do you have any allergies. If so what are those?",
-            "type": "text",
-            "field": "allergies",
-        },
-        {
-            "question": "Do you have typical health issues. If so what are those?",
-            "type": "text",
-            "field": "issues",
-        },
-        {"question": "What is your goal?", "type": "text", "field": "goal"},
-    ]
-
-
-@app.post("/daily")
-def submit_daily_answers(answers: list[dict], user_id: str):
-    daily_questions[user_id] = answers
-    logger.info(f"Received daily answers for user {user_id}: {answers}")
-    return {"status": "success"}
 
 
 @app.post("/registration")
