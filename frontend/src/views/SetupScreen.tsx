@@ -19,9 +19,8 @@ interface Question {
 }
 
 const SetupScreen = () => {
-  const [answers, setAnswers] = useState<Record<string, string>>({});
-  const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [fileTouched, setFileTouched] = useState(false);
+  const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [touched, setTouched] = useState<Record<number, boolean>>({});
   const [file, setFile] = useState<File | null>(null);
 
   const {
@@ -145,12 +144,10 @@ const SetupScreen = () => {
               ) : null}
             </div>
           ))}
-          <Label htmlFor="epr">Electronic Patient Record *</Label>
+          <Label htmlFor="epr">Electronic Patient Record</Label>
           <Input
             type="file"
             id="epr"
-            className={fileTouched && !file ? 'border-red-500' : ''}
-            onBlur={() => setFileTouched(true)}
             onChange={(e) => setFile(e.target.files?.[0] || null)}
           />
           <p className="text-muted-foreground text-sm">
