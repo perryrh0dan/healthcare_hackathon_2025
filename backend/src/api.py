@@ -7,9 +7,6 @@ from uuid import uuid4
 from datetime import datetime
 import base64
 import os
-from contextlib import asynccontextmanager
-from apscheduler.schedulers.asyncio import AsyncIOScheduler
-from apscheduler.triggers.cron import CronTrigger
 from .state import graph, summarization_graph
 from .routes import documents, user, calendar, daily, diet, dashboard, conversations
 from .db import (
@@ -19,9 +16,8 @@ from .db import (
     get_user,
     Message,
     Conversation,
-    generate_daily_questions_for_all_users,
-    generate_daily_dashboard_for_all_users,
 )
+from fastapi.staticfiles import StaticFiles
 from langchain_core.messages import HumanMessage, AIMessage
 from .config import logger
 
@@ -43,6 +39,9 @@ app.include_router(daily.router)
 app.include_router(diet.router)
 app.include_router(dashboard.router)
 app.include_router(conversations.router)
+
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 
 class ChatRequest(BaseModel):
@@ -186,11 +185,3 @@ async def chat_endpoint(
     ]
 
     return {"history": history_serializable, "conversation_id": conversation_id}
-
-
-@app.get("/images/{path:path}")
-async def get_image(path: str):
-    if not os.path.exists(path):
-        return {"error": "Image not found"}
-    return FileResponse(path, media_type="image/jpeg")
-

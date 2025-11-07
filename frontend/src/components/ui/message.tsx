@@ -3,9 +3,10 @@ import React from 'react';
 interface MessageProps {
   text: string;
   sender: 'user' | 'bot';
+  image?: string;
 }
 
-const Message: React.FC<MessageProps> = ({ text, sender }) => {
+const Message: React.FC<MessageProps> = ({ image, text, sender }) => {
   return (
     <div
       className={`mb-2 flex ${sender === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -17,7 +18,8 @@ const Message: React.FC<MessageProps> = ({ text, sender }) => {
             : 'bg-gray-200 text-gray-800'
         }`}
       >
-        {text}
+        <span>{text}</span>
+        { image !== undefined && image !== null && ( <img src={`/api/${image}`} /> ) }
       </div>
     </div>
   );

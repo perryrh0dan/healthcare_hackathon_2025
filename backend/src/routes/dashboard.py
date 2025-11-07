@@ -1,5 +1,4 @@
-from fastapi import APIRouter, HTTPException, Depends
-from http import HTTPStatus
+from fastapi import APIRouter, Depends
 from src.clients.llm import LLM
 from src.graphs.dashboardgraph import DashboardGraph
 from src.db import get_daily_dashboard_widgets, save_daily_dashboard_widgets, User
@@ -21,4 +20,3 @@ async def get_widgets(user: User = Depends(get_current_user)):
     widgets = graph.run(user.__dict__)
     save_daily_dashboard_widgets(user.username, [widget.__dict__ for widget in widgets])
     return widgets
-

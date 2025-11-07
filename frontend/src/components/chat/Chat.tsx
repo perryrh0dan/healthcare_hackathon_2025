@@ -17,6 +17,7 @@ type ChatProps = {
 interface ChatMessage {
   text: string;
   sender: 'user' | 'bot';
+  image?: string
 }
 
 const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
@@ -43,9 +44,10 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
     if (conversationData?.messages) {
       setMessages(
         conversationData.messages.map(
-          (item: { role: string; content: string }) => ({
+          (item: { role: string; content: string, image?: string }) => ({
             text: item.content,
             sender: item.role === 'assistant' ? 'bot' : 'user',
+            image: item.image,
           })
         )
       );
@@ -75,7 +77,7 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
     },
     onSuccess: (data: {
       conversation_id?: string;
-      history: { role: string; content: string }[];
+      history: { role: string; content: string; image?: string }[];
     }) => {
       if (data.conversation_id) {
         Cookies.set('conversation_id', data.conversation_id, { expires: 7 });
@@ -84,6 +86,7 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
         data.history.map((item) => ({
           text: item.content,
           sender: item.role === 'assistant' ? 'bot' : 'user',
+          image: item.image,
         }))
       );
     },
@@ -130,7 +133,7 @@ const Chat = ({ open, onSend, onClose, onOpen }: ChatProps) => {
           {open && (
             <div className="flex-1 overflow-y-auto">
               {messages.map((msg, idx) => (
-                <Message key={idx} text={msg.text} sender={msg.sender} />
+                <Message key={idx} text={msg.text} sender={msg.sender} image={msg.image} />
               ))}
               {sendMessageMutation.isPending && (
                 <div className="flex items-center gap-2 text-gray-500">
