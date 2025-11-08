@@ -5,6 +5,11 @@ import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from '@tanstack/react-router';
 import { useQuery } from '@tanstack/react-query';
 
+interface CalendarEvent {
+  from_timestamp: string;
+  description: string;
+}
+
 const FoodPlanner = () => {
   const navigate = useNavigate();
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(
@@ -15,7 +20,36 @@ const FoodPlanner = () => {
     ? format(selectedDate, 'yyyy-MM-dd')
     : '';
 
-  const { data: allEvents = [] } = useQuery({
+  const { data: planEvents = [], isLoading: isPlanLoading } = useQuery<
+    CalendarEvent[]
+  >({
+    queryKey: ['calendar-plan'],
+    queryFn: async () => {
+      const response = await fetch(
+        `${import.meta.env.VITE_API_URL}/diet/plan`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            days: 7,
+            start_date: new Date(),
+            preferences: {},
+          }),
+        }
+      );
+      if (!response.ok) {
+        throw new Error('Failed to fetch calendar plan');
+      }
+      const data = await response.json();
+      return data.events || [];
+    },
+    staleTime: Infinity,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+  });
+
+  const { data: allEvents = [] } = useQuery<CalendarEvent[]>({
     queryKey: ['calendar'],
     queryFn: async () => {
       const response = await fetch(
@@ -30,10 +64,11 @@ const FoodPlanner = () => {
       const data = await response.json();
       return data.events || [];
     },
+    enabled: !isPlanLoading,
   });
 
-  const eventDates = allEvents.map((e) => new Date(e.from_timestamp));
-  const modifiers = { hasEvent: eventDates };
+  const allEventDates = [...allEvents].map((e) => new Date(e.from_timestamp));
+  const modifiers = { hasEvent: allEventDates };
 
   const eventsForDay = allEvents.filter(
     (e) => format(new Date(e.from_timestamp), 'yyyy-MM-dd') === selectedDateKey
@@ -61,6 +96,14 @@ const FoodPlanner = () => {
         .map((e) => e.description.split('Snack: ')[1])
         .join('<br />') || 'No snack planned',
   };
+
+  if (isPlanLoading) {
+    return (
+      <div className="flex min-h-screen animate-pulse items-center justify-center">
+        Loading...
+      </div>
+    );
+  }
 
   return (
     <div className="flex min-h-screen w-full flex-col gap-4">
