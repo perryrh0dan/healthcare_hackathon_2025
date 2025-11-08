@@ -30,6 +30,7 @@ class Conversation(BaseModel):
 class Answer(BaseModel):
     question: str
     answer: str
+    field: Optional[str]
 
 
 class DailyAnswers(BaseModel):
@@ -604,18 +605,21 @@ def generate_daily_questions_for_all_users():
                     {"value": "bad", "label": "Bad"},
                 ],
                 "optional": False,
+                "field": "mood",
             },
             {
                 "question": "What is your blood pressure?",
                 "type": "text",
                 "options": None,
                 "optional": False,
+                "field": "blood_pressure",
             },
             {
                 "question": "What is your weight?",
                 "type": "number",
                 "options": None,
                 "optional": False,
+                "field": "weight",
             },
             {
                 "question": "Did you take any medication today?",
@@ -625,6 +629,7 @@ def generate_daily_questions_for_all_users():
                     {"value": "no", "label": "No"},
                 ],
                 "optional": False,
+                "field": "medication",
             },
         ]
 

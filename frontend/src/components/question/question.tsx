@@ -8,6 +8,7 @@ import EnumQuestion from "./enum-question";
 type QuestionAnswer = {
   question: string,
   answer: string | number
+  field: string
 }
 
 type QuestionProps = {
@@ -31,7 +32,7 @@ const Question = ({ data, index, total, onNext, onPrev, onSubmit }: QuestionProp
   const handleChange = (answer: string | number) => {
     const newAnswers = [...answers]
 
-    newAnswers[index] = { question: data.question, answer: answer }
+    newAnswers[index] = { question: data.question, answer: answer, field: data.field }
 
     setAnswers(newAnswers)
   }

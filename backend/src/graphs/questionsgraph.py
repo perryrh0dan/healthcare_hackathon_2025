@@ -14,11 +14,11 @@ def convert_messages_to_langchain(messages: List[Any]) -> List[BaseMessage]:
     for msg in messages:
         if isinstance(msg, BaseMessage):
             converted.append(msg)
-        elif hasattr(msg, 'role') and hasattr(msg, 'content'):
+        elif hasattr(msg, "role") and hasattr(msg, "content"):
             # Assuming it's a db.Message
-            if msg.role == 'user':
+            if msg.role == "user":
                 converted.append(HumanMessage(content=msg.content))
-            elif msg.role == 'assistant':
+            elif msg.role == "assistant":
                 converted.append(AIMessage(content=msg.content))
             else:
                 # Default to HumanMessage for unknown roles
@@ -40,6 +40,9 @@ class Question(BaseModel):
     from_: Optional[int] = Field(None, alias="from")
     to: Optional[int] = None
     options: Optional[List[QuestionOption]] = None
+    field: str = Field(
+        description="One word that lets us group questions about the same topic"
+    )
 
 
 class QuestionList(BaseModel):
@@ -82,8 +85,6 @@ class QuestionsGraph(BaseGraph):
         except Exception as e:
             logger.error(f"Error during graph chat: {e}")
             return []
-
-
 
     def supervisor_agent(self, state: AgentState):
         base_questions = state["base_questions"]

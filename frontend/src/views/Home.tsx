@@ -4,12 +4,33 @@
  import Chat from '../components/chat/Chat';
  import useAuthedQuery from '@/hooks/useAuthedQuery';
  import { Calendar, Cog, FlameIcon, Notebook, UserIcon } from 'lucide-react';
+import LineChart from '@/components/line-chart/line-chart';
 
-type Widget = {
+type DefaultWidget = {
   title: string
-  type: "text" | "streak"
+  type: "text" | "streak" | "event"
   body: string
 }
+
+type GraphWidgetBody = {
+  data: Array<{x: string, y: string}>,
+}
+
+type GraphWidget = {
+  title: string
+  type: "graph"
+  body: GraphWidgetBody
+}
+
+const MoodMapping: Record<string, number> = {
+  verygood: 5,
+  good: 4,
+  okay: 3,
+  notgood: 2,
+  bad: 1
+ }
+
+type Widget = DefaultWidget | GraphWidget
 
 const Home = () => {
   const { user } = useAuth();
@@ -50,13 +71,13 @@ const Home = () => {
           </h3>
         </div>
         <div className="col-span-2 grid grid-cols-4 gap-4">
-          <Link className="rounded-lg bg-purple-100 p-4 shadow-lg flex justify-center items-center" to="/food-planner">
+          <Link className="rounded-lg bg-purple-100 p-4 shadow-sm flex justify-center items-center" to="/food-planner">
             <Calendar size={40} />
           </Link>
-          <Link className="rounded-lg bg-purple-100 p-4 shadow-lg flex justify-center items-center" to="/daily">
+          <Link className="rounded-lg bg-purple-100 p-4 shadow-sm flex justify-center items-center" to="/daily">
             <Notebook size={40} />
           </Link>
-          <Link className="rounded-lg bg-purple-100 p-4 shadow-lg flex justify-center items-center" to="/setup">
+          <Link className="rounded-lg bg-purple-100 p-4 shadow-sm flex justify-center items-center" to="/setup">
             <Cog size={40} />
           </Link>
         </div>
@@ -76,7 +97,7 @@ const Home = () => {
                 <FlameIcon className="absolute right-1 bottom-3 text-amber-500 fill-amber-500" size={60} />
               </div>
             )
-          } else {
+          } else if (w.type === 'event') {
             return (
               <Link to="/food-planner">
                 <div key={idx} className="rounded-lg bg-[#f5f5f5] p-6 shadow-sm h-40">
@@ -85,6 +106,12 @@ const Home = () => {
                 </div>
               </Link>
             )
+          } else if (w.type === 'graph') {
+            return (
+              <div key={idx} className="rounded-lg bg-[#f5f5f5] p-6 shadow-sm h-40">
+                 <LineChart labels={w.body.data.map(d => d.x)} data={w.body.data.map(d => MoodMapping[d.y])} />
+              </div>
+            ) 
            }
          })
         }

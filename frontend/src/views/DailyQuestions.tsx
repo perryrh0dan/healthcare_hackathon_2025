@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 
 interface IQuestion {
   question: string
+  field: string
 }
 
 export interface INumberQuestion extends IQuestion {

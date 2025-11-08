@@ -26,7 +26,7 @@ class DailyQuestion(TypedDict):
     type: Literal["text", "number", "enum"]
     options: Optional[list[DailyQuestionOption]]
     optional: bool
-    field: Optional[Literal["mood"]]
+    field: str
 
 
 @router.get("/")
@@ -53,8 +53,20 @@ def get_daily_questions(user: User = Depends(get_current_user)):
             optional=False,
             field="mood",
         ),
-        DailyQuestion(question="What is your blood pressure?", type="text", options=None, optional=False, field=None),
-        DailyQuestion(question="What is your weight?", type="number", options=None, optional=False, field=None),
+        DailyQuestion(
+            question="What is your blood pressure?",
+            type="text",
+            options=None,
+            optional=False,
+            field="blood_pressure",
+        ),
+        DailyQuestion(
+            question="What is your weight?",
+            type="number",
+            options=None,
+            optional=False,
+            field="weight",
+        ),
         DailyQuestion(
             question="Did you take any medication today?",
             type="enum",
@@ -63,7 +75,7 @@ def get_daily_questions(user: User = Depends(get_current_user)):
                 DailyQuestionOption(value="no", label="No"),
             ],
             optional=False,
-            field=None,
+            field="medication",
         ),
     ]
 
@@ -79,6 +91,7 @@ def get_daily_questions(user: User = Depends(get_current_user)):
 class AnswerDTO(TypedDict):
     question: str
     answer: str
+    field: str
 
 
 @router.post("/")
@@ -89,7 +102,12 @@ def submit_daily_answers(data: List[AnswerDTO], user: User = Depends(get_current
             detail="Daily questionnaire already submitted today",
         )
 
-    answers = [Answer(question=answer["question"], answer=answer["answer"]) for answer in data]
+    answers = [
+        Answer(
+            question=answer["question"], answer=answer["answer"], field=answer["field"]
+        )
+        for answer in data
+    ]
 
     save_daily_answers(user.username, answers)
     logger.info(f"Received daily answers for user {user.username}: {answers}")
